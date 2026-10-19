@@ -2,19 +2,19 @@ A project for area 5, "Authentication and access control" for the [MariaDB stude
 
 # Protecting a University Database with MariaDB 13.1: Roles, DENY, ED25519 and Verified TLS
 
-[![CI](https://github.com/alexkhovrenkov/test_project_DB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alexkhovrenkov/test_project_DB/actions/workflows/ci.yml)
+[![CI](https://github.com/urushika10-commits/Test_MariaDB_Project/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/urushika10-commits/Test_MariaDB_Project/actions/workflows/ci.yml)
 
-**Constructor University** · **Repository:** <https://github.com/alexkhovrenkov/test_project_DB> · **Branch:** `main`
-**MariaDB version:** 13.1.2 (`13.1.2-MariaDB-ubu2604`, a preview release). [docker-compose.yml](docker-compose.yml) uses,
-by default, the exact build all results below come from:
-`quay.io/mariadb-foundation/mariadb-devel@sha256:ed1087249cadb93623dd3b11258ea9790ad8f49c328dae5a5ef726ff1cea2931`.
-To try the newest 13.1 preview build instead, put `MARIADB_IMAGE=quay.io/mariadb-foundation/mariadb-devel:13.1` in
+**Constructor University** · **Repository:** <https://github.com/urushika10-commits/Test_MariaDB_Project> · **Branch:** `main`
+**MariaDB version:** 13.1.1 (`13.1.1-MariaDB-ubu2604`, a release candidate). [docker-compose.yml](docker-compose.yml) uses,
+by default, the exact build all results below come from, pinned by digest:
+`mariadb:13.1.1-rc@sha256:a652753786e98d9f976aaab8cc21e49c16ea0cfe41a877694825a6ea73140fb1`.
+To try the latest 13.1 build instead, put `MARIADB_IMAGE=mariadb:13.1` in
 `.env` (CI does this weekly in its "canary" job).
 
 ```bash
-git clone https://github.com/alexkhovrenkov/test_project_DB.git && cd test_project_DB
+git clone https://github.com/urushika10-commits/Test_MariaDB_Project.git && cd Test_MariaDB_Project
 make demo      # creates certificates, starts MariaDB 13.1, runs every demonstration (no password to configure)
-make test      # 260 tests: 100 unit + 160 integration tests against the real server
+make test      # 278 tests: 113 unit + 165 integration tests against the real server
 ```
 
 ## Contents
@@ -105,8 +105,8 @@ administrative mistakes (experiment 1) - with caveats we measured (section 11).
 SHA-1-derived hash that is *password-equivalent*: anyone who steals `mysql.user` can authenticate. With
 ED25519 the server stores only a public key; the client proves knowledge of the password by signing a random
 challenge, and the password never crosses the network. Our test uses the stored value as a password and is
-rejected (section 8). ED25519 works with a plain `pip install` of PyMySQL, unlike PARSEC (needs the C
-connector). For the one account that never needs the network - root - `unix_socket` is better still: there
+rejected (section 8). ED25519 works with a plain `pip install` of PyMySQL; PARSEC normally needs the compiled C
+connector, so we implemented its client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)) and use it as a primary network method too (section 8). For the one account that never needs the network - root - `unix_socket` is better still: there
 is no password to steal at all. Together they remove the classic weak point the area brief names, a
 password sitting in a configuration file: nothing in this repository or on disk holds one (section 8).
 
@@ -126,8 +126,8 @@ Each fails differently: a stolen password table (ED25519 helps), a sniffed netwo
 CI runs everything on GitHub's x86_64 Ubuntu runners (section 13).
 
 ```bash
-git clone https://github.com/alexkhovrenkov/test_project_DB.git
-cd test_project_DB
+git clone https://github.com/urushika10-commits/Test_MariaDB_Project.git
+cd Test_MariaDB_Project
 make demo
 ```
 
@@ -144,8 +144,8 @@ Every step prints `PASS`/`FAIL`; any failure makes `make` exit non-zero.
 | Command | Does |
 |---|---|
 | `make demo` | everything above |
-| `make test` | start the server if needed, run the full test suite (260 base + 12 for our pair's additions) with coverage of `app/` |
-| `make unit` | only the 100 unit tests - no server, no Docker needed |
+| `make test` | start the server if needed, run the full test suite (278 tests) with coverage of `app/`, `attacks/`, `benchmarks/` |
+| `make unit` | only the 113 unit tests - no server, no Docker needed |
 | `make lint` | ruff (Python) and shellcheck (shell scripts) |
 | `make roles` / `make examples` / `make experiments` | one part of the demo |
 | `make attack` | our pair's additions: PARSEC role demo + stolen-hash work factor + the MITM (see [docs/our-version.md](docs/our-version.md)) |
@@ -180,7 +180,7 @@ passed, all tests passed. We had no Windows machine, so the WSL / PowerShell var
 Check the server version (`docker compose exec mariadb ...` works whatever the container is called):
 ```bash
 docker compose exec mariadb mariadbd --version
-# mariadbd  Ver 13.1.2-MariaDB-ubu2604 for debian-linux-gnu on aarch64 (mariadb.org binary distribution)
+# mariadbd  Ver 13.1.1-MariaDB-ubu2604 for debian-linux-gnu on aarch64 (mariadb.org binary distribution)
 ```
 
 ## 4. Scenario, schema and design decisions
@@ -297,7 +297,7 @@ DENY  SELECT ON university.financial_records TO professor_role;  -- "...except t
 ```
 
 Rules, from the [official reference](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/deny)
-and **each one reproduced on 13.1.2** by an experiment or test:
+and **each one reproduced on 13.1.1** by an experiment or test:
 
 | Rule | Verified by |
 |---|---|
@@ -353,8 +353,8 @@ data directory - and every account still has a real authentication method:
 | Method named in the brief | Used for |
 |---|---|
 | **Unix socket** ✅ | root. No password at all; only usable inside the container. Not suitable for the application, which connects over the network (TLS would be pointless over a local socket). |
-| **ED25519** ✅ | every network account. Ships with MariaDB, works with `pip install pymysql[ed25519]`, works over TLS. |
-| **PARSEC** | not used: the pure-Python PyMySQL cannot speak it (it needs a locally compiled C connector). |
+| **ED25519** ✅ | every network demo account. Ships with MariaDB, works with `pip install pymysql[ed25519]`, works over TLS. Kept as the documented comparison for PARSEC. |
+| **PARSEC** ✅ | implemented and demonstrated as a primary network method. PyMySQL cannot speak PARSEC and the C connector needs a compiler, so we wrote the client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)) and drove the whole role/`DENY` matrix with it (24/24, [app/parsec_demo.py](app/parsec_demo.py)); it also wins the stolen-hash attack over ED25519 ([benchmarks/work_factor.py](benchmarks/work_factor.py)). See [docs/our-version.md](docs/our-version.md). |
 
 **How it is built** ([sql/04_users.sql](sql/04_users.sql), [sql/06_lockdown.sh](sql/06_lockdown.sh),
 [app/admin.py](app/admin.py)):
@@ -494,6 +494,15 @@ $ docker compose exec mariadb ls -l /etc/mysql/tls
 ```
 `tests/unit/test_repository_security.py` fails if any `certs/*-key.pem` is group/other-accessible.
 
+**A real man-in-the-middle, not just a wrong CA** (our addition). The test above points a client at an
+unrelated CA. We go further and put a real attacker *in the path*: [attacks/mitm_proxy.py](attacks/mitm_proxy.py)
+is a MySQL-aware, TLS-terminating proxy that presents an impostor certificate (host name `localhost`, signed by
+the untrusted CA) and relays the decrypted session. With verification **off** it reads the whole session (578
+bytes in the captured run); with verification **on** the client refuses it before sending anything. Run it with
+`make mitm`; it is asserted by [tests/integration/test_mitm.py](tests/integration/test_mitm.py). Full write-up
+and the quiet finding - that even over a successful MITM, PARSEC leaks no reusable password - in
+[docs/our-version.md](docs/our-version.md).
+
 ## 10. Security experiments (advanced)
 
 Experiments 1-13 are annotated SQL files (14 is a shell script, because it needs its own throw-away server).
@@ -514,7 +523,7 @@ Step 3  user: exp_viewer  (active role: none)
     Why      FINDING: the DENY on the viewer does NOT block the DEFINER view. The view runs with its definer's privileges, so the same rows are reachable.
 ```
 
-| # | File | Question | Result (13.1.2) |
+| # | File | Question | Result (13.1.1) |
 |---|---|---|---|
 | 1 | [grant_deny_conflicts](experiments/01_grant_deny_conflicts.sql) | Who wins when GRANT and DENY disagree: same level, different levels, either order? | DENY always; db▸table▸column masking; only the named privilege is removed |
 | 2 | [multi_role_inheritance](experiments/02_multi_role_inheritance.sql) | GRANT in one branch, DENY three roles deep in another | DENY wins - **but only after `FLUSH PRIVILEGES`** (finding 1) |
@@ -544,7 +553,7 @@ Complete output of a clean run: [docs/demo-output.txt](docs/demo-output.txt).
 
 ## 11. Findings: limits and surprises of MariaDB access control
 
-Everything here was observed on **13.1.2** (a preview release - behaviour may change; the CI "canary" job
+Everything here was observed on **13.1.1-rc** (a release candidate - behaviour may change; the CI "canary" job
 re-runs the tests weekly against the floating `13.1` tag to notice). Each finding is reproduced by an
 experiment or a test that asserts the observed behaviour (finding 8 by `make lockout`, which exits non-zero
 if any step differs).
@@ -686,6 +695,12 @@ privilege silently returns `NULL` instead of an error.
 | Bypass the policy with a pre-computed key | `strict_password_validation` | `test_precomputed_public_key_is_refused...` | 1290 |
 | Locked / expired account | `ACCOUNT LOCK`, `PASSWORD EXPIRE` | `test_locked_account...`, `test_expired_password...` | 4151 / 1820 |
 | SQL injection through the app | parameters + input validation | `test_update_grade_rejects_injection_payloads` | ValueError / no match |
+| Offline guessing of a stolen credential | PARSEC salt + PBKDF2 iterations (vs unsalted ed25519/native) | `benchmarks/work_factor.py`, `test_parsec_auth.py` | ~680x slower than native |
+| Impostor server reading the whole session | verified TLS (`ssl_verify_cert` + identity) vs a real MITM proxy | `attacks/mitm_demo.py`, `test_mitm.py` | refused (unverified: 578 bytes read) |
+| Reading forbidden data under PARSEC auth | roles + `DENY`, unchanged by the auth method | `app/parsec_demo.py`, `test_parsec_roles.py` | 1142 (24/24) |
+
+Our pair's additions are the last three rows; the measured numbers and method are in
+[docs/our-version.md](docs/our-version.md).
 
 **Not protected** - see also section 15: a legitimate reader copying data (finance can copy every IBAN);
 anyone who can become root (here: `docker exec`); the server host or Docker daemon; passwords that pass the
@@ -694,32 +709,39 @@ the metadata leaks of section 11; and a role-attached DENY next to a second sour
 
 ## 13. Test results
 
-All numbers are from real runs on 2026-10-11 against `13.1.2-MariaDB-ubu2604`, from a **fresh clone of `main`**
-in a new directory (macOS, arm64), and from GitHub Actions (Ubuntu, x86_64):
+All numbers are from real runs on 2026-10-19 against `13.1.1-MariaDB-ubu2604` (the image the repository now
+defaults to), from a **fresh clone of `main`** in a new directory (macOS, arm64), and from GitHub Actions
+(Ubuntu, x86_64):
 
 | Command (fresh clone) | Result |
 |---|---|
 | `make clean && make demo` | exit 0 - role demo **24/24** actions as expected; tutorial examples **108/108** steps; experiments 1-13 **373/373** steps; no FAIL ([docs/demo-output.txt](docs/demo-output.txt)) |
 | `make demo` a second time | exit 0, identical totals (idempotent) |
-| `make test` | **260 passed** (100 unit + 160 integration) in about 3 s; coverage of `app/` **95 %** ([docs/test-output.txt](docs/test-output.txt)) |
+| `make test` | **278 passed** (113 unit + 165 integration) in about 6 s; coverage **82 %** across `app/`, `attacks/`, `benchmarks/` ([docs/test-output.txt](docs/test-output.txt)) |
+| `make attack` | PARSEC role demo **24/24**; the work-factor benchmark and the MITM **2/2** ([docs/attack-output.txt](docs/attack-output.txt)) |
 | `make lint` | ruff: all checks passed; shellcheck: no findings |
 | `make lockout` | **13/13** steps passed on a disposable server ([docs/lockout-output.txt](docs/lockout-output.txt)) |
-| `make unit` with the server stopped | 100 passed; the integration tests stop at once with one message and exit code 3 |
+| `make unit` with the server stopped | 113 passed; the integration tests stop at once with one message and exit code 3 |
 | two copies side by side (`MARIADB_CONTAINER`/`MARIADB_PORT`) | `make test` passed in the second copy while the first was running |
 
 Coverage per module (`make test`): `actions.py` 100 %, `admin.py` 91 %, `database.py` 96 %, `demo.py` 90 %,
-`menu.py` 93 %, `sqlrunner.py` 97 %. The uncovered lines are mostly `if __name__ == "__main__"` entry points
-and error branches for a missing Docker binary.
+`menu.py` 93 %, `sqlrunner.py` 97 %, `parsec_auth.py` 98 %, `mitm_proxy.py` 87 %. The libraries are
+well-covered by tests; the lower-coverage files (`parsec_demo.py`, `mitm_demo.py`, `work_factor.py`) are the
+demo/benchmark *scripts* - their `main()`/CLI paths are exercised by `make parsec`, `make mitm` and
+`make benchmark` (captured in `docs/`) rather than by pytest. Overall coverage is **82 %** across the three
+packages; the remaining misses are `if __name__ == "__main__"` entry points, CLI argument handling and
+error branches for a missing Docker binary.
 
 **Continuous integration** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every push to
 `main` on GitHub-hosted Ubuntu runners: install dependencies, `make lint`, start the pinned MariaDB image
 with the same `docker-compose.yml` (TLS, `unix_socket` root via `docker exec`, the X509 harness - nothing is
 mocked or skipped), `make test`, `make demo`, `make lockout`. The `canary` job repeats the tests on the floating
-`13.1` tag and may fail without failing the workflow. Example of a complete green run, for commit `b3e8bf0`:
-<https://github.com/alexkhovrenkov/test_project_DB/actions/runs/38141173223> - lint clean, 260 passed, coverage
-95 %, role demo 24/24, 108 + 373 steps, lockout 13/13 (identical numbers in the canary job). The badge at the
-top shows the status of the latest commit. CI also caught a real problem: the run for the A2 commit failed
-once, which led to finding 12.
+`13.1` tag and may fail without failing the workflow. The badge at the top links to this repository's
+[Actions](https://github.com/urushika10-commits/Test_MariaDB_Project/actions) and shows the status of the
+latest commit on `main`. The same workflow was run throughout development (lint clean, the full test suite
+passing, role demo 24/24, 108 + 373 demo steps, lockout 13/13); CI once caught a real problem - an early run
+failed and led to finding 12. The captured local runs these numbers come from are in
+[docs/test-output.txt](docs/test-output.txt) and [docs/demo-output.txt](docs/demo-output.txt).
 
 Test files:
 
@@ -736,15 +758,19 @@ Test files:
 | [integration/test_tls.py](tests/integration/test_tls.py) | verified connection and protocol version, wrong CA, host-name mismatch, plaintext refused, verification-off lesson, PyMySQL's unverified default |
 | [integration/test_experiments.py](tests/integration/test_experiments.py) | runs all 18 `.sql` tutorial and experiment files; any mismatching step fails with the step-by-step output |
 | [integration/test_tools.py](tests/integration/test_tools.py) | the role demo, the runner's command line, the interactive menu and `set-password`, driven with typed input |
+| [unit/test_parsec_auth.py](tests/unit/test_parsec_auth.py) | PARSEC key derivation vs a real stored value, ext-salt parsing, signature validity, forged-response rejection (no server) |
+| [integration/test_parsec_roles.py](tests/integration/test_parsec_roles.py) | all four roles authenticate with PARSEC over verified TLS; the role matrix is identical to ed25519; the professor DENY holds |
+| [integration/test_mitm.py](tests/integration/test_mitm.py) | the MITM proxy: an unverified client is intercepted (bytes read); a verifying client refuses the impostor |
 
 Tests use random throw-away names (`t_lab_<hex>`, `t_pw_<hex>`) and clean up; after a run the server is as
 `sql/` left it.
 
 **Do the tests actually test?** Mutation checks on the final suite, run for real: with the professor's DENY
-revoked (`REVOKE DENY SELECT ON university.financial_records FROM professor_role`) **11 of 260 tests failed** -
+revoked (`REVOKE DENY SELECT ON university.financial_records FROM professor_role`) **13 of 278 tests failed** -
 the professor/financial cell of the role matrix, the later-GRANT test, the JOIN test, the `SHOW TABLES` test,
 the SHOW GRANTS visibility test, the `mysql.global_priv` JSON test, experiments 6 and 10, the professor's role
-demo (twice) and the interactive-menu test; restoring the DENY gave 260 passed again. With
+demo (twice), the interactive-menu test, and the two PARSEC tests that check the same DENY still holds under
+PARSEC (`test_parsec_roles.py`); restoring the DENY gave 278 passed again. With
 `certs/server-key.pem` set to mode 644 the key-permission unit test failed; `make certs` set it back to 600.
 
 ## 14. Reproducing everything
@@ -760,8 +786,9 @@ demo (twice) and the interactive-menu test; restoring the DENY gave 260 passed a
 | ED25519 attacks (section 8) | `.venv/bin/python -m pytest tests/integration/test_authentication.py -v` | all PASSED |
 | TLS attacks (section 9) | `.venv/bin/python -m pytest tests/integration/test_tls.py -v` | all PASSED |
 | DENY semantics (section 7) | `.venv/bin/python -m pytest tests/integration/test_deny_semantics.py -v` | all PASSED |
-| Everything, verbosely | `.venv/bin/python -m pytest -v` | 260 passed |
-| Server-free part | `make unit` | 100 passed |
+| Everything, verbosely | `.venv/bin/python -m pytest -v` | 278 passed |
+| Our additions: PARSEC, work factor, MITM | `make attack` | PARSEC 24/24; work-factor table; `mitm_demo: 2/2 as expected` ([docs/attack-output.txt](docs/attack-output.txt)) |
+| Server-free part | `make unit` | 113 passed |
 | Lint | `make lint` | `lint: no findings` |
 | Password-free account model (section 8) | `.venv/bin/python -m pytest tests/integration/test_account_model.py -v` | all PASSED |
 | By hand, as a role | `make set-password USER=smith_professor`, then `make sql USER=smith_professor` | section 7 |
@@ -853,23 +880,35 @@ demo (twice) and the interactive-menu test; restoring the DENY gave 260 passed a
 │   ├── 05_password_policy.sql   simple_password_check + password_reuse_check
 │   └── 06_lockdown.sh           root -> unix_socket OR unusable key; removes the image's healthcheck password file
 ├── scripts/
-│   └── generate_certs.sh        CA, server and client certificates, keys mode 600
+│   └── generate_certs.sh        CA, server, client and impostor-proxy certificates, keys mode 600
 ├── app/
-│   ├── database.py              verified-TLS connections; passwords from memory or getpass. No security logic.
+│   ├── database.py              verified-TLS connections (ed25519 + PARSEC); passwords from memory or getpass. No security logic.
 │   ├── admin.py                 socket-root helper, the short-lived harness account, set-password
 │   ├── actions.py               the university SQL (fixed strings) + validated update_grade
 │   ├── demo.py                  six actions x four roles, expected/actual/PASS-FAIL
 │   ├── menu.py                  interactive version
-│   └── sqlrunner.py             runs annotated .sql files as different users
+│   ├── sqlrunner.py             runs annotated .sql files as different users
+│   ├── parsec_auth.py           pure-Python PARSEC client (plugs into PyMySQL) - our addition
+│   └── parsec_demo.py           the whole role/DENY matrix authenticated with PARSEC (24/24) - our addition
+├── benchmarks/
+│   └── work_factor.py           offline guesses/s per stored format, mean +/- sd + iteration sweep - our addition
+├── attacks/
+│   ├── mitm_proxy.py            MySQL-aware TLS-terminating man-in-the-middle proxy - our addition
+│   └── mitm_demo.py             runs the MITM: succeeds unverified, blocked when verified - our addition
 ├── examples/                    5 standalone SQL lessons + README with a 10-minute "Start here"
 ├── experiments/                 13 annotated SQL experiments + 14_public_lockout.sh (disposable server)
 ├── tests/
-│   ├── unit/                    100 tests, no server needed
-│   └── integration/             160 tests against the real server
+│   ├── unit/                    113 tests, no server needed (incl. test_parsec_auth.py, test_work_factor.py)
+│   └── integration/             165 tests against the real server (incl. test_parsec_roles.py, test_mitm.py)
 └── docs/
     ├── demo-output.txt          complete output of `make demo` from a fresh clone
     ├── test-output.txt          `pytest -v` with coverage, same run
     ├── lockout-output.txt       `make lockout`, same run
+    ├── our-version.md           our pair's additions (PARSEC, work factor, MITM), written up
+    ├── benchmark-output.txt     captured `make benchmark`
+    ├── parsec-demo-output.txt   captured `make parsec` (24/24)
+    ├── mitm-output.txt          captured `make mitm`
+    ├── attack-output.txt        captured `make attack` (all three)
     └── upstream-report-nested-role-deny.md   bug report for finding 1, prepared (not filed)
 ```
 
@@ -877,10 +916,10 @@ demo (twice) and the interactive-menu test; restoring the DENY gave 260 passed a
 
 | Name | Contribution |
 |---|---|
-| Alexander Vicente Lopez Yanes | Test scripts |
-| Maha Mahdi | Emotional support & AI tests |
-| Alexei Khovrenkov | Repository, README, Docker management |
-| Julissa Michelle Barahona Nunez | App files and SQL |
+| Alexander Vicente López Yanes | PARSEC client and role demo, the stolen-hash work-factor benchmark, the man-in-the-middle proxy, and the TLS/attack tests; reproducibility fixes |
+| Maha Mahdi | AI-assisted evaluation and test review |
+| Alexei Khovrenkov | repository, README, Docker and CI |
+| Julissa Michelle Barahona Nunez | application code and the SQL schema, roles and DENY |
 
 ## 19. References
 

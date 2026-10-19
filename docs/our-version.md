@@ -52,19 +52,20 @@ standard deviation over five runs.
 
 | Stored format | Guesses/second (one machine) | Notes |
 |---|---|---|
-| `mysql_native_password` (SHA-1 ×2, no salt) | ~2,200,000 | unsalted; one table attacks every account |
-| ed25519 (SHA-512 → curve, no salt) | ~7,600 (see caveat) | unsalted; same password → same stored value |
-| **PARSEC** (PBKDF2-SHA512 ×1024, salted) | **~3,300** | **salted and iterated; ~680× slower than native** |
+| `mysql_native_password` (SHA-1 ×2, no salt) | ~2,400,000 | unsalted; one table attacks every account |
+| ed25519 (SHA-512 → curve, no salt) | ~8,000 (see caveat) | unsalted; same password → same stored value |
+| **PARSEC** (PBKDF2-SHA512 ×1024, salted) | **~3,400** | **salted and iterated; ~700× slower than native** |
 
 PARSEC's iteration count is a knob the server controls (`parsec_iterations`), and
-the cost scales with it, measured on one code path:
+the cost scales with it, measured on one code path (the exact captured run is in
+[benchmark-output.txt](benchmark-output.txt); figures vary a few percent between runs):
 
 | Iterations | Guesses/second |
 |---|---|
-| 1,024 (default) | ~3,100 |
-| 4,096 | ~1,230 |
-| 16,384 | ~345 |
-| 65,536 | ~87 |
+| 1,024 (default) | ~3,400 |
+| 4,096 | ~1,240 |
+| 16,384 | ~340 |
+| 65,536 | ~90 |
 
 Two honest points recorded in the output:
 

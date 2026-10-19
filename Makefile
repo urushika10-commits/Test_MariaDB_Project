@@ -95,7 +95,7 @@ attack: setup
 	$(PYTHON) attacks/mitm_demo.py
 
 test: setup
-	$(PYTHON) -m pytest --cov=app --cov-report=term-missing
+	$(PYTHON) -m pytest --cov=app --cov=attacks --cov=benchmarks --cov-report=term-missing
 
 unit: venv
 	$(PYTHON) -m pytest tests/unit

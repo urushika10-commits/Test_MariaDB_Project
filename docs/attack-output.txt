@@ -61,20 +61,20 @@ PARSEC role demo: 24/24 actions behaved as expected (identical to the ed25519 ma
 .venv/bin/python benchmarks/work_factor.py
 machine guess-rate, mean +/- sd over 5 runs
 
-  mysql_native_password (SHA-1 x2, no salt)             2,403,668 +/-     31,442  guesses/s
-  ed25519 (SHA-512 -> curve, no salt)                       7,759 +/-        223  guesses/s
-  PARSEC (PBKDF2-SHA512 x1024, salted)                      3,343 +/-          4  guesses/s
+  mysql_native_password (SHA-1 x2, no salt)             2,457,471 +/-     34,442  guesses/s
+  ed25519 (SHA-512 -> curve, no salt)                       8,164 +/-         78  guesses/s
+  PARSEC (PBKDF2-SHA512 x1024, salted)                      3,438 +/-          9  guesses/s
 
-  Native is ~719x faster to attack than PARSEC per guess.
+  Native is ~715x faster to attack than PARSEC per guess.
   Caveat: the ed25519 figure reflects PyMySQL's pure-Python curve code, not an
   optimised attacker (who derives ed25519 keys far faster); treat the native row
   as the representative fast-hash rate. ed25519's real weakness is below: no salt.
 
   PARSEC iteration scaling (salted; guesses/s falls ~linearly with iterations):
-      1,024 iterations (P0)        3,248 +/-      103  guesses/s
-      4,096 iterations (P2)        1,225 +/-        2  guesses/s
-     16,384 iterations (P4)          348 +/-        1  guesses/s
-     65,536 iterations (P6)           82 +/-       15  guesses/s
+      1,024 iterations (P0)        3,423 +/-       33  guesses/s
+      4,096 iterations (P2)        1,261 +/-        2  guesses/s
+     16,384 iterations (P4)          355 +/-        4  guesses/s
+     65,536 iterations (P6)           92 +/-        1  guesses/s
 
   Per-account salt: same password -> different stored value: True.
   So a stolen PARSEC value must be attacked on its own - no table reused across

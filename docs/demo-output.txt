@@ -1,25 +1,21 @@
-
-subject=CN=localhost
-issuer=CN=University Demo CA
-X509v3 Subject Alternative Name: 
-    DNS:localhost
-server-cert.pem: OK
-client-cert.pem: OK
+docker compose down -v
+ Container university-db Stopping 
+ Container university-db Stopped 
+ Container university-db Removing 
+ Container university-db Removed 
+ Network test_mariadb_project_default Removing 
+ Network test_mariadb_project_default Removed 
 docker compose up -d --wait
- Network fresh_default Creating 
- Network fresh_default Creating 
- Network fresh_default Created 
- Network fresh_default Created 
+ Network test_mariadb_project_default Creating 
+ Network test_mariadb_project_default Creating 
+ Network test_mariadb_project_default Created 
+ Network test_mariadb_project_default Created 
  Container university-db Creating 
  Container university-db Created 
  Container university-db Starting 
  Container university-db Started 
  Container university-db Waiting 
  Container university-db Healthy 
-python3 -m venv .venv
-.venv/bin/python -m pip install --quiet --upgrade pip
-.venv/bin/python -m pip install --quiet -r requirements-dev.txt
-touch .venv/.installed
 .venv/bin/python app/demo.py
 
 ==============================================================================
@@ -270,7 +266,7 @@ Goal: See that anything you did not GRANT is forbidden (default deny).
   [setup] PASS GRANT tut_reader TO tut_ann@'%';
   [setup] PASS SET DEFAULT ROLE tut_reader FOR tut_ann@'%';
 
-Step 1  user: dba (harness_8a94228b)  (active role: none)
+Step 1  user: dba (harness_b197f70b)  (active role: none)
     SQL      SHOW GRANTS FOR tut_reader;
     Expected contains SELECT
     Actual   ok (2 rows)
@@ -302,7 +298,7 @@ Step 4  user: tut_ann  (active role: tut_reader)
     Result   PASS
     Why      Only SELECT was granted, so writing to projects fails as well.
 
-Step 5  user: dba (harness_8a94228b)  (active role: none)
+Step 5  user: dba (harness_b197f70b)  (active role: none)
     SQL      GRANT INSERT ON tutorial.projects TO tut_reader;
     Expected ok
     Actual   ok
@@ -347,13 +343,13 @@ Step 1  user: tut_ann  (active role: tut_analyst)
     Result   PASS
     Why      Before the DENY, the broad GRANT lets the analyst read every table.
 
-Step 2  user: dba (harness_8a94228b)  (active role: none)
+Step 2  user: dba (harness_b197f70b)  (active role: none)
     SQL      DENY SELECT ON tutorial.employees TO tut_analyst;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 3  user: dba (harness_8a94228b)  (active role: none)
+Step 3  user: dba (harness_b197f70b)  (active role: none)
     SQL      SHOW GRANTS FOR tut_analyst;
     Expected contains DENY SELECT
     Actual   ok (3 rows)
@@ -387,7 +383,7 @@ Step 6  user: tut_ann  (active role: tut_analyst)
     Result   PASS
     Why      A denied table disappears from SHOW TABLES: the user cannot even see it exists.
 
-Step 7  user: dba (harness_8a94228b)  (active role: none)
+Step 7  user: dba (harness_b197f70b)  (active role: none)
     SQL      GRANT SELECT ON tutorial.employees TO tut_analyst;
     Expected ok
     Actual   ok
@@ -400,13 +396,13 @@ Step 8  user: tut_ann  (active role: tut_analyst)
     Result   PASS
     Why      A DENY beats every GRANT, at every level, whatever order they were issued in.
 
-Step 9  user: dba (harness_8a94228b)  (active role: none)
+Step 9  user: dba (harness_b197f70b)  (active role: none)
     SQL      REVOKE SELECT ON tutorial.employees FROM tut_analyst;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 10  user: dba (harness_8a94228b)  (active role: none)
+Step 10  user: dba (harness_b197f70b)  (active role: none)
     SQL      REVOKE DENY SELECT ON tutorial.employees FROM tut_analyst;
     Expected ok
     Actual   ok
@@ -562,7 +558,7 @@ Step 6  user: tut_bob  (active role: none)
     Result   PASS
     Why      The denied column is also hidden from SHOW COLUMNS (id and name remain).
 
-Step 7  user: dba (harness_8a94228b)  (active role: none)
+Step 7  user: dba (harness_b197f70b)  (active role: none)
     SQL      REVOKE DENY SELECT (salary) ON tutorial.employees FROM tut_bob@'%';
     Expected ok
     Actual   ok
@@ -588,7 +584,7 @@ Goal: See the different ways a login can fail, and which error code each produce
   [setup] PASS DROP USER IF EXISTS tut_ann@'%';
   [setup] PASS CREATE USER tut_ann@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
 
-Step 1  user: dba (harness_8a94228b)  (active role: none)
+Step 1  user: dba (harness_b197f70b)  (active role: none)
     SQL      SELECT user, plugin FROM mysql.user WHERE user = 'tut_ann';
     Expected contains ed25519
     Actual   ok (1 rows)
@@ -617,7 +613,7 @@ Step 4  user: nobody_here  (active role: none)
     Result   PASS
     Why      An account that does not exist gives the SAME error 1045, so an attacker cannot tell which accounts exist.
 
-Step 5  user: dba (harness_8a94228b)  (active role: none)
+Step 5  user: dba (harness_b197f70b)  (active role: none)
     SQL      ALTER USER tut_ann@'%' ACCOUNT LOCK;
     Expected ok
     Actual   ok
@@ -630,13 +626,13 @@ Step 6  user: tut_ann  (active role: none)
     Result   PASS
     Why      Even the correct password fails while the account is locked: error 4151.
 
-Step 7  user: dba (harness_8a94228b)  (active role: none)
+Step 7  user: dba (harness_b197f70b)  (active role: none)
     SQL      ALTER USER tut_ann@'%' ACCOUNT UNLOCK;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 8  user: dba (harness_8a94228b)  (active role: none)
+Step 8  user: dba (harness_b197f70b)  (active role: none)
     SQL      ALTER USER tut_ann@'%' PASSWORD EXPIRE;
     Expected ok
     Actual   ok
@@ -675,7 +671,7 @@ Goal: Check that a DENY only removes the privilege it names.
   [setup] PASS SET DEFAULT ROLE exp_r FOR exp_u@'%';
   [setup] PASS GRANT SELECT ON exp_lab.* TO exp_r;
 
-Step 1  user: dba (harness_00f5d3ef)  (active role: none)
+Step 1  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t1 TO exp_r;
     Expected ok
     Actual   ok
@@ -697,13 +693,13 @@ Step 3  user: exp_u  (active role: exp_r)
     Why      The other table is still covered by the database-level GRANT.
   [setup] PASS REVOKE ALL PRIVILEGES, GRANT OPTION FROM exp_r;
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t2 TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 5  user: dba (harness_00f5d3ef)  (active role: none)
+Step 5  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT ON exp_lab.t2 TO exp_r;
     Expected ok
     Actual   ok
@@ -717,13 +713,13 @@ Step 6  user: exp_u  (active role: exp_r)
     Why      Case B: DENY first, GRANT afterwards. Still denied: the order of the two statements is irrelevant.
   [setup] PASS REVOKE ALL PRIVILEGES, GRANT OPTION FROM exp_r;
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT ON exp_lab.t1 TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.* TO exp_r;
     Expected ok
     Actual   ok
@@ -737,13 +733,13 @@ Step 9  user: exp_u  (active role: exp_r)
     Why      Case C: the table-level GRANT on t1 is more specific, yet the database-level DENY still wins. Denies propagate downward.
   [setup] PASS REVOKE ALL PRIVILEGES, GRANT OPTION FROM exp_r;
 
-Step 10  user: dba (harness_00f5d3ef)  (active role: none)
+Step 10  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT (pub) ON exp_lab.t1 TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t1 TO exp_r;
     Expected ok
     Actual   ok
@@ -757,13 +753,13 @@ Step 12  user: exp_u  (active role: exp_r)
     Why      Case D: even the narrowest GRANT (one column) cannot survive a table-level DENY (reported as a table-level refusal, 1142).
   [setup] PASS REVOKE ALL PRIVILEGES, GRANT OPTION FROM exp_r;
 
-Step 13  user: dba (harness_00f5d3ef)  (active role: none)
+Step 13  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT, INSERT ON exp_lab.t2 TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 14  user: dba (harness_00f5d3ef)  (active role: none)
+Step 14  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY INSERT ON exp_lab.t2 TO exp_r;
     Expected ok
     Actual   ok
@@ -843,7 +839,7 @@ Step 3  user: exp_u  (active role: exp_team)
     Result   PASS
     Why      No DENY exists yet: t_audit is readable through the inherited GRANT.
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t_audit TO exp_audit_block;
     Expected ok
     Actual   ok
@@ -857,7 +853,7 @@ Step 5  user: exp_u  (active role: exp_team)
     Result   PASS
     Why      Part 2 - A FINDING (MariaDB 13.1.2): the DENY exists but is NOT enforced yet. A DENY on a role that is inherited by another role only takes effect after the server rebuilds its role graph. Until then the user is still allowed (fail-open).
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      FLUSH PRIVILEGES;
     Expected ok
     Actual   ok
@@ -992,7 +988,7 @@ Step 10  user: exp_u  (active role: none)
     Result   PASS
     Why      Metadata, part 1: the column is STILL listed. SHOW COLUMNS shows every column on which you hold ANY privilege, and INSERT on it was never denied.
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY INSERT (secret) ON exp_lab.t TO exp_u@'%';
     Expected ok
     Actual   ok
@@ -1073,34 +1069,34 @@ Step 1  user: exp_u  (active role: exp_r)
     Actual   error 1142: SELECT command denied to user 'exp_u'@'172.18.0.1' for table `exp_lab`.`t`
     Result   PASS
 
-Step 2  user: dba (harness_00f5d3ef)  (active role: none)
+Step 2  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.* FROM exp_r;
     Expected error 1141
     Actual   error 1141: There is no such grant defined for user 'exp_r' on host ''
     Result   PASS
     Why      The DENY is on the TABLE. Revoking at database level finds nothing to revoke (error 1141).
 
-Step 3  user: dba (harness_00f5d3ef)  (active role: none)
+Step 3  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT (pub) ON exp_lab.t FROM exp_r;
     Expected error 1147
     Actual   error 1147: There is no such grant defined for user 'exp_r' on host '' on table 't'
     Result   PASS
     Why      Revoking at column level fails too (error 1147: no such grant on this table).
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY INSERT ON exp_lab.t FROM exp_r;
     Expected error 1147
     Actual   error 1147: There is no such grant defined for user 'exp_r' on host '' on table 't'
     Result   PASS
     Why      A different privilege type does not match either.
 
-Step 5  user: dba (harness_00f5d3ef)  (active role: none)
+Step 5  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE SELECT ON exp_lab.t FROM exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_r;
     Expected contains DENY SELECT ON `exp_lab`.`t`
     Actual   ok (2 rows)
@@ -1109,19 +1105,19 @@ Step 6  user: dba (harness_00f5d3ef)  (active role: none)
     Result   PASS
     Why      The explicit GRANT is gone, but the DENY line is still in the role's grants.
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT (pub) ON exp_lab.t TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.t FROM exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 9  user: dba (harness_00f5d3ef)  (active role: none)
+Step 9  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_r;
     Expected contains DENY SELECT (`pub`)
     Actual   ok (2 rows)
@@ -1130,19 +1126,19 @@ Step 9  user: dba (harness_00f5d3ef)  (active role: none)
     Result   PASS
     Why      The table-level DENY is removed, the column-level one stays.
 
-Step 10  user: dba (harness_00f5d3ef)  (active role: none)
+Step 10  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE ALL PRIVILEGES, GRANT OPTION FROM exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 12  user: dba (harness_00f5d3ef)  (active role: none)
+Step 12  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_r;
     Expected excludes DENY
     Actual   ok (1 rows)
@@ -1151,19 +1147,19 @@ Step 12  user: dba (harness_00f5d3ef)  (active role: none)
     Why      Everything is gone in one statement: the quickest (and the most dangerous) way to clear an account.
   [setup] PASS GRANT SELECT ON exp_lab.* TO exp_r;
 
-Step 13  user: dba (harness_00f5d3ef)  (active role: none)
+Step 13  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.* TO exp_r;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 14  user: dba (harness_00f5d3ef)  (active role: none)
+Step 14  user: dba (harness_124b9469)  (active role: none)
     SQL      DROP DATABASE exp_lab;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 15  user: dba (harness_00f5d3ef)  (active role: none)
+Step 15  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_r;
     Expected contains DENY SELECT ON `exp_lab`.*
     Actual   ok (3 rows)
@@ -1184,7 +1180,7 @@ Step 16  user: exp_u  (active role: exp_r)
     Result   PASS
     Why      The database was re-created and the role was granted SELECT again - but the old DENY silently applies to the NEW database with the same name.
 
-Step 17  user: dba (harness_00f5d3ef)  (active role: none)
+Step 17  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.* FROM exp_r;
     Expected ok
     Actual   ok
@@ -1406,8 +1402,8 @@ Step 7  user: alice_student  (active role: student_role)
     SQL      SELECT table_name FROM information_schema.tables WHERE table_schema = 'university';
     Expected excludes financial_records
     Actual   ok (2 rows)
-             | courses
              | my_grades
+             | courses
     Result   PASS
     Why      Metadata is filtered to what she may touch: she sees only courses and my_grades, not the other tables.
 
@@ -1549,7 +1545,7 @@ Goal: Make three typical administration mistakes on purpose, observe the symptom
   [setup] PASS GRANT SELECT ON exp_lab.pub_t TO exp_r;
   [setup] PASS CREATE USER exp_u@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
 
-Step 1  user: dba (harness_00f5d3ef)  (active role: none)
+Step 1  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT exp_r TO exp_u@'%';
     Expected ok
     Actual   ok
@@ -1562,16 +1558,16 @@ Step 2  user: exp_u  (active role: none)
     Result   PASS
     Why      Symptom: "I was given the role but I get permission errors". The role is held but inactive.
 
-Step 3  user: dba (harness_00f5d3ef)  (active role: none)
+Step 3  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_u@'%';
     Expected excludes SET DEFAULT ROLE
     Actual   ok (2 rows)
              | GRANT `exp_r` TO `exp_u`@`%`
-             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING 'fo1d3DnK4W7JRj2Loapj+cLQQIpS1HS669Vj7T+y3tg'
+             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING 'zLRQjl07gMEz2MKbbIZPalUSpetBqVXXFZ3mWtMuWWk'
     Result   PASS
     Why      Diagnosis: SHOW GRANTS lists the role, but there is no SET DEFAULT ROLE line.
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      SET DEFAULT ROLE exp_r FOR exp_u@'%';
     Expected ok
     Actual   ok
@@ -1585,7 +1581,7 @@ Step 5  user: exp_u  (active role: exp_r)
     Result   PASS
     Why      Repair: the default role applies at the next login (the user may also just run SET ROLE exp_r).
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT ALL PRIVILEGES ON exp_lab.* TO exp_r;
     Expected ok
     Actual   ok
@@ -1599,7 +1595,7 @@ Step 7  user: exp_u  (active role: exp_r)
     Result   PASS
     Why      Symptom: nothing fails - that is the danger. The user can now read (and change) the secret table.
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT grantee, table_schema, privilege_type FROM information_schema.schema_privileges WHERE table_schema = 'exp_lab' AND privilege_type = 'SELECT';
     Expected contains exp_r
     Actual   ok (1 rows)
@@ -1607,7 +1603,7 @@ Step 8  user: dba (harness_00f5d3ef)  (active role: none)
     Result   PASS
     Why      Detection: audit the grants from the privilege tables. information_schema.schema_privileges lists database-wide grants.
 
-Step 9  user: dba (harness_00f5d3ef)  (active role: none)
+Step 9  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE ALL PRIVILEGES ON exp_lab.* FROM exp_r;
     Expected ok
     Actual   ok
@@ -1619,14 +1615,14 @@ Step 10  user: exp_u  (active role: exp_r)
     Actual   error 1142: SELECT command denied to user 'exp_u'@'172.18.0.1' for table `exp_lab`.`secret_t`
     Result   PASS
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.* TO PUBLIC;
     Expected ok
     Actual   ok
     Result   PASS
     Why      PUBLIC means every account, including the administrator who types it. (Here limited to the scratch database; a global PUBLIC DENY is far worse - see Limitations in the README.)
 
-Step 12  user: dba (harness_00f5d3ef)  (active role: none)
+Step 12  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT * FROM exp_lab.pub_t;
     Expected rows 1
     Actual   ok (1 rows)
@@ -1634,21 +1630,21 @@ Step 12  user: dba (harness_00f5d3ef)  (active role: none)
     Result   PASS
     Why      Privileges of an OPEN session are not recomputed: the administrator (dba) still works in the session that issued the DENY ...
 
-Step 13  user: dba (harness_00f5d3ef)  (active role: none)
+Step 13  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT * FROM exp_lab.pub_t;
     Expected error 1142 pub_t
-    Actual   error 1142: SELECT command denied to user 'harness_00f5d3ef'@'172.18.0.1' for table `exp_lab`.`pub_t`
+    Actual   error 1142: SELECT command denied to user 'harness_124b9469'@'172.18.0.1' for table `exp_lab`.`pub_t`
     Result   PASS
     Why      ... but after reconnecting, the administrator is locked out of the data too.
 
-Step 14  user: dba (harness_00f5d3ef)  (active role: none)
+Step 14  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.* FROM PUBLIC;
     Expected ok
     Actual   ok
     Result   PASS
     Why      Recovery: the administrator can still lift a PUBLIC deny (the documented exception: REVOKE DENY ... FROM PUBLIC works with UPDATE on mysql.global_priv).
 
-Step 15  user: dba (harness_00f5d3ef)  (active role: none)
+Step 15  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT * FROM exp_lab.pub_t;
     Expected rows 1
     Actual   ok (1 rows)
@@ -1701,7 +1697,7 @@ Step 3  user: exp_u  (active role: none)
     Result   PASS
     Why      ... and the direct GRANT is then the only rule left. THE DENY IS GONE.
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t TO exp_u@'%';
     Expected ok
     Actual   ok
@@ -1714,13 +1710,13 @@ Step 5  user: exp_u  (active role: none)
     Result   PASS
     Why      A DENY on the account itself applies whatever role is active, even NONE - and it takes effect immediately, in the open session.
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.t FROM exp_u@'%';
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t TO PUBLIC;
     Expected ok
     Actual   ok
@@ -1732,7 +1728,7 @@ Step 8  user: exp_u  (active role: none)
     Actual   error 1142: SELECT command denied to user 'exp_u'@'172.18.0.1' for table `exp_lab`.`t`
     Result   PASS
 
-Step 9  user: dba (harness_00f5d3ef)  (active role: none)
+Step 9  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.t FROM PUBLIC;
     Expected ok
     Actual   ok
@@ -1794,7 +1790,7 @@ Step 3  user: exp_viewer  (active role: none)
     Result   PASS
     Why      The INVOKER view runs with the viewer's own privileges, so here the DENY applies (reported as error 1356: the view cannot be used).
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.t_base TO exp_definer@'%';
     Expected ok
     Actual   ok
@@ -1807,13 +1803,13 @@ Step 5  user: exp_viewer  (active role: none)
     Result   PASS
     Why      A DENY on the view's definer applies even though the viewer holds privileges on the view: the view stops working for everyone who uses it.
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY SELECT ON exp_lab.t_base FROM exp_definer@'%';
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON exp_lab.v_definer TO exp_viewer@'%';
     Expected ok
     Actual   ok
@@ -1852,10 +1848,10 @@ Step 2  user: smith_professor  (active role: professor_role)
     SQL      SELECT table_name FROM information_schema.tables WHERE table_schema = 'university';
     Expected excludes financial_records
     Actual   ok (4 rows)
-             | courses
-             | grades
              | my_grades
              | students
+             | grades
+             | courses
     Result   PASS
     Why      Channel 2: so does information_schema.
 
@@ -1891,7 +1887,7 @@ Step 7  user: smith_professor  (active role: professor_role)
     Expected excludes DENY
     Actual   ok (6 rows)
              | GRANT `professor_role` TO `smith_professor`@`%`
-             | GRANT USAGE ON *.* TO `smith_professor`@`%` IDENTIFIED VIA ed25519 USING 'TcWqMgxiuJB9QzJEFMzx0JgglnV6ASeM7K/zYTgc2dQ'
+             | GRANT USAGE ON *.* TO `smith_professor`@`%` IDENTIFIED VIA ed25519 USING '9+jIeX4L2QQBao4a7IVui0UWq2uA2eTqmX+Emyfwhb8'
              | GRANT USAGE ON *.* TO `professor_role`
              | GRANT SELECT ON `university`.* TO `professor_role`
              | GRANT UPDATE (`grade`) ON `university`.`grades` TO `professor_role`
@@ -1899,7 +1895,7 @@ Step 7  user: smith_professor  (active role: professor_role)
     Result   PASS
     Why      The professor cannot read their own DENY: SHOW GRANTS lists GRANT lines only (DENY lines need SELECT on the mysql database) ...
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR professor_role;
     Expected contains DENY SELECT ON `university`.`financial_records`
     Actual   ok (4 rows)
@@ -1948,14 +1944,14 @@ Step 2  user: exp_u  (active role: none)
     Result   PASS
     Why      LIMITATION: each "_" matches any single character, so the grant also covers exp1lab1a - a database the administrator never meant to expose.
 
-Step 3  user: dba (harness_00f5d3ef)  (active role: none)
+Step 3  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE SELECT ON exp_lab_a.* FROM exp_u@'%';
     Expected ok
     Actual   ok
     Result   PASS
     Why      Repair: escape the underscores with a backslash and grant again.
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT ON `exp\_lab\_a`.* TO exp_u@'%';
     Expected ok
     Actual   ok
@@ -1974,13 +1970,13 @@ Step 6  user: exp_u  (active role: none)
     Actual   error 1142: SELECT command denied to user 'exp_u'@'172.18.0.1' for table `exp1lab1a`.`s`
     Result   PASS
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      GRANT SELECT ON `exp\_lab\_a`.* TO exp_v@'%';
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON `exp\_lab%`.* TO exp_v@'%';
     Expected ok
     Actual   ok
@@ -1994,7 +1990,7 @@ Step 9  user: exp_v  (active role: none)
     Result   PASS
     Why      LIMITATION: only the MOST SPECIFIC matching entry is consulted. The exact grant on exp_lab_a is more specific than the deny pattern exp_lab%, so the broad DENY is silently ignored.
 
-Step 10  user: dba (harness_00f5d3ef)  (active role: none)
+Step 10  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY SELECT ON `exp\_lab\_a`.* TO exp_v@'%';
     Expected ok
     Actual   ok
@@ -2020,7 +2016,7 @@ Goal: Check that simple_password_check and password_reuse_check (installed by sq
 Goal: Record the real error codes, and find what the policy does NOT catch.
   [setup] PASS DROP USER IF EXISTS exp_hash@'%';
 
-Step 1  user: dba (harness_00f5d3ef)  (active role: none)
+Step 1  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW VARIABLES WHERE Variable_name IN ('simple_password_check_minimal_length', 'password_reuse_check_interval', 'strict_password_validation');
     Expected rows 3
     Actual   ok (3 rows)
@@ -2030,7 +2026,7 @@ Step 1  user: dba (harness_00f5d3ef)  (active role: none)
     Result   PASS
     Why      The policy as the server sees it.
 
-Step 2  user: dba (harness_00f5d3ef)  (active role: none)
+Step 2  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT plugin_name, plugin_status FROM information_schema.plugins WHERE plugin_type = 'PASSWORD VALIDATION';
     Expected rows 2
     Actual   ok (2 rows)
@@ -2038,118 +2034,118 @@ Step 2  user: dba (harness_00f5d3ef)  (active role: none)
              | password_reuse_check   ACTIVE
     Result   PASS
 
-Step 3  user: dba (harness_00f5d3ef)  (active role: none)
+Step 3  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_weak_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('abc');
     Expected error 1819 simple_password_check
     Actual   error 1819: Your password does not satisfy the current policy requirements (simple_password_check)
     Result   PASS
     Why      Too short and missing character classes: refused, error 1819. Validation applies to IDENTIFIED VIA ed25519 USING PASSWORD(...) too.
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_weak_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('abc');
     Expected error 1819 password_reuse_check
     Actual   error 1819: Your password does not satisfy the current policy requirements (password_reuse_check)
     Result   PASS
     Why      FINDING: the SAME weak password again is now reported as REUSED. The refused password was written to the reuse history anyway, although the account was never created.
 
-Step 5  user: dba (harness_00f5d3ef)  (active role: none)
+Step 5  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_weak_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('password12345');
     Expected error 1819 simple_password_check
     Actual   error 1819: Your password does not satisfy the current policy requirements (simple_password_check)
     Result   PASS
     Why      Long enough, but no upper-case letter and no special character.
 
-Step 6  user: dba (harness_00f5d3ef)  (active role: none)
+Step 6  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_weak_{{run}}@'%' IDENTIFIED VIA ed25519;
     Expected error 1819
     Actual   error 1819: Your password does not satisfy the current policy requirements (simple_password_check)
     Result   PASS
     Why      IDENTIFIED VIA ed25519 with no USING clause means the EMPTY password - which the policy refuses.
 
-Step 7  user: dba (harness_00f5d3ef)  (active role: none)
+Step 7  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_hash@'%' IDENTIFIED VIA ed25519 USING 'lEiAPNNMP1kq0dRsguIBKo/em5EPb9Y0272TblVhRUw';
     Expected error 1290 strict-password-validation
     Actual   error 1290: The MariaDB server is running with the --strict-password-validation option so it cannot execute this statement
     Result   PASS
     Why      With a validation plugin installed, strict_password_validation also refuses a credential given as a ready-made public key or hash: the plugin could not check it (1290).
 
-Step 8  user: dba (harness_00f5d3ef)  (active role: none)
+Step 8  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_pw_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
     Expected ok
     Actual   ok
     Result   PASS
     Why      A strong password (random for this run) is accepted.
 
-Step 9  user: dba (harness_00f5d3ef)  (active role: none)
+Step 9  user: dba (harness_124b9469)  (active role: none)
     SQL      ALTER USER exp_pw_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('Weak-pass');
     Expected error 1396
-    Actual   error 1396: Operation ALTER USER failed for 'exp_pw_e92180'@'%'
+    Actual   error 1396: Operation ALTER USER failed for 'exp_pw_01ef7e'@'%'
     Result   PASS
     Why      FINDING: a WEAK password set with ALTER USER is refused too - but reported as the generic 1396, not 1819 ...
 
-Step 10  user: dba (harness_00f5d3ef)  (active role: none)
+Step 10  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW WARNINGS;
     Expected contains simple_password_check
     Actual   ok (4 rows)
              | Warning  1819  simple_password_check: Too short password (< 12)
              | Warning  1819  simple_password_check: Not enough digits (< 1)
              | Error    1819  Your password does not satisfy the current policy requirements (simple_password_check)
-             | Error    1396  Operation ALTER USER failed for 'exp_pw_e92180'@'%'
+             | Error    1396  Operation ALTER USER failed for 'exp_pw_01ef7e'@'%'
     Result   PASS
     Why      ... the reason (simple_password_check) is only in the warnings.
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      SET PASSWORD FOR exp_pw_{{run}}@'%' = PASSWORD('{{pw}}');
     Expected error 1819 password_reuse_check
     Actual   error 1819: Your password does not satisfy the current policy requirements (password_reuse_check)
     Result   PASS
     Why      Setting the same password again with SET PASSWORD: refused by password_reuse_check, error 1819. The account keeps its ed25519 plugin.
 
-Step 12  user: dba (harness_00f5d3ef)  (active role: none)
+Step 12  user: dba (harness_124b9469)  (active role: none)
     SQL      ALTER USER exp_pw_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
     Expected error 1396
-    Actual   error 1396: Operation ALTER USER failed for 'exp_pw_e92180'@'%'
+    Actual   error 1396: Operation ALTER USER failed for 'exp_pw_01ef7e'@'%'
     Result   PASS
     Why      FINDING: the same reuse through ALTER USER is reported as the generic error 1396 ("Operation ALTER USER failed") ...
 
-Step 13  user: dba (harness_00f5d3ef)  (active role: none)
+Step 13  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW WARNINGS;
     Expected contains password_reuse_check: The password was already used
     Actual   ok (3 rows)
              | Warning  1819  password_reuse_check: The password was already used
              | Error    1819  Your password does not satisfy the current policy requirements (password_reuse_check)
-             | Error    1396  Operation ALTER USER failed for 'exp_pw_e92180'@'%'
+             | Error    1396  Operation ALTER USER failed for 'exp_pw_01ef7e'@'%'
     Result   PASS
     Why      ... the real reason is only visible in the warnings. Code that checks for 1819 to detect a policy violation would miss it.
 
-Step 14  user: dba (harness_00f5d3ef)  (active role: none)
+Step 14  user: dba (harness_124b9469)  (active role: none)
     SQL      DROP USER exp_pw_{{run}}@'%';
     Expected ok
     Actual   ok
     Result   PASS
     Why      FINDING: the history also outlives the account. Drop it and create it again with its old password: refused as reused.
 
-Step 15  user: dba (harness_00f5d3ef)  (active role: none)
+Step 15  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_pw_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
     Expected error 1819 password_reuse_check
     Actual   error 1819: Your password does not satisfy the current policy requirements (password_reuse_check)
     Result   PASS
 
-Step 16  user: dba (harness_00f5d3ef)  (active role: none)
+Step 16  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_pw2_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('{{pw}}');
     Expected ok
     Actual   ok
     Result   PASS
     Why      FINDING: reuse is checked per account. Another account may use exactly the same password.
 
-Step 17  user: dba (harness_00f5d3ef)  (active role: none)
+Step 17  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE USER exp_weak_{{run}}@'%' IDENTIFIED VIA ed25519 USING PASSWORD('exp_weak_{{run}}-Password-1');
     Expected ok
     Actual   ok
     Result   PASS
     Why      FINDING: simple_password_check only counts characters; a password that contains the account name passes.
 
-Step 18  user: dba (harness_00f5d3ef)  (active role: none)
+Step 18  user: dba (harness_124b9469)  (active role: none)
     SQL      SELECT user, plugin FROM mysql.user WHERE authentication_string = '' AND plugin = 'mysql_native_password' AND user IN ('my_grades_owner', 'mariadb.sys');
     Expected rows 2
     Actual   ok (2 rows)
@@ -2194,23 +2190,23 @@ Step 2  user: exp_u  (active role: none)
              | 5001
     Result   PASS
 
-Step 3  user: dba (harness_00f5d3ef)  (active role: none)
+Step 3  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY EXECUTE ON PROCEDURE exp_lab.payroll_report TO exp_u@'%';
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 4  user: dba (harness_00f5d3ef)  (active role: none)
+Step 4  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY EXECUTE ON FUNCTION exp_lab.salary_of TO exp_u@'%';
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 5  user: dba (harness_00f5d3ef)  (active role: none)
+Step 5  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_u@'%';
     Expected contains DENY EXECUTE ON PROCEDURE `exp_lab`.`payroll_report`
     Actual   ok (4 rows)
-             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING '5BQVVIZEh7dlRktU78pmny/xxwsqUqJTdEE0JRJe/fU'
+             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING 'GtPUP7d2Ki/keMCSaZClMyvW4D75eYZ0TR3KuHKAlKw'
              | GRANT EXECUTE ON `exp_lab`.* TO `exp_u`@`%`
              | DENY EXECUTE ON PROCEDURE `exp_lab`.`payroll_report` TO `exp_u`@`%`
              | DENY EXECUTE ON FUNCTION `exp_lab`.`salary_of` TO `exp_u`@`%`
@@ -2246,21 +2242,21 @@ Step 9  user: exp_u  (active role: none)
     Result   PASS
     Why      Metadata: the denied routines disappear from INFORMATION_SCHEMA.ROUTINES; only public_report is listed.
 
-Step 10  user: dba (harness_00f5d3ef)  (active role: none)
+Step 10  user: dba (harness_124b9469)  (active role: none)
     SQL      DENY EXECUTE ON exp_lab.payroll_report TO exp_u@'%';
     Expected error 1144
     Actual   error 1144: Illegal GRANT/REVOKE command; please consult the manual to see which privileges can be used
     Result   PASS
     Why      Without PROCEDURE/FUNCTION the name is read as a TABLE, and EXECUTE is not a table privilege: error 1144.
 
-Step 11  user: dba (harness_00f5d3ef)  (active role: none)
+Step 11  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY EXECUTE ON exp_lab.salary_of FROM exp_u@'%';
     Expected error 1144
     Actual   error 1144: Illegal GRANT/REVOKE command; please consult the manual to see which privileges can be used
     Result   PASS
     Why      The same rule applies to REVOKE DENY.
 
-Step 12  user: dba (harness_00f5d3ef)  (active role: none)
+Step 12  user: dba (harness_124b9469)  (active role: none)
     SQL      REVOKE DENY EXECUTE ON PROCEDURE exp_lab.payroll_report FROM exp_u@'%';
     Expected ok
     Actual   ok
@@ -2274,22 +2270,22 @@ Step 13  user: exp_u  (active role: none)
              | payroll report
     Result   PASS
 
-Step 14  user: dba (harness_00f5d3ef)  (active role: none)
+Step 14  user: dba (harness_124b9469)  (active role: none)
     SQL      DROP FUNCTION exp_lab.salary_of;
     Expected ok
     Actual   ok
     Result   PASS
 
-Step 15  user: dba (harness_00f5d3ef)  (active role: none)
+Step 15  user: dba (harness_124b9469)  (active role: none)
     SQL      SHOW GRANTS FOR exp_u@'%';
     Expected excludes DENY EXECUTE ON FUNCTION
     Actual   ok (2 rows)
-             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING '5BQVVIZEh7dlRktU78pmny/xxwsqUqJTdEE0JRJe/fU'
+             | GRANT USAGE ON *.* TO `exp_u`@`%` IDENTIFIED VIA ed25519 USING 'GtPUP7d2Ki/keMCSaZClMyvW4D75eYZ0TR3KuHKAlKw'
              | GRANT EXECUTE ON `exp_lab`.* TO `exp_u`@`%`
     Result   PASS
     Why      The function's DENY is gone together with the function.
 
-Step 16  user: dba (harness_00f5d3ef)  (active role: none)
+Step 16  user: dba (harness_124b9469)  (active role: none)
     SQL      CREATE FUNCTION exp_lab.salary_of(id INT) RETURNS INT DETERMINISTIC RETURN 5000 + id;
     Expected ok
     Actual   ok
