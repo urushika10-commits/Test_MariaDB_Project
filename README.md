@@ -18,10 +18,12 @@ make demo      # creates certificates, starts MariaDB 13.1, runs every demonstra
 make test      # 278 tests: 113 unit + 165 integration tests against the real server
 ```
 
-> **New here? The short path (about 15 minutes).** Run `make demo` and watch the PASS lines. Then read just
-> four sections: **§6 Roles**, **§7 DENY**, **§8 Authentication** and **§9 TLS** - that is the whole feature.
-> [examples/README.md](examples/README.md) has a 10-minute hands-on "Start here". Everything from §10 on
-> (the 14+ experiments, the findings, our pair's attacks) is depth you can skip on a first read.
+> **New here? The short path (about 15 minutes).** Run `make demo` and watch the PASS lines. The one-page
+> **[docs/cheatsheet.md](docs/cheatsheet.md)** has every pattern (roles, `DENY`, the auth methods, verified
+> TLS, error codes) copy-paste ready. Then read just four sections: **§6 Roles**, **§7 DENY**,
+> **§8 Authentication** and **§9 TLS** - that is the whole feature. [examples/README.md](examples/README.md)
+> has a 10-minute hands-on "Start here". Everything from §10 on (the 15 experiments, the findings, our pair's
+> attacks) is depth you can skip on a first read.
 
 ## Contents
 
@@ -128,7 +130,7 @@ Each fails differently: a stolen password table (ED25519 helps), a sniffed netwo
 
 ## 3. Requirements and quick start
 
-**You need:** Docker with the Compose plugin (Docker Desktop on macOS/Windows), Python 3.10 or newer (tested with 3.13), `make`,
+**You need:** Docker with the Compose plugin (Docker Desktop on macOS/Windows), Python 3.10 or newer (the captured runs in `docs/` used 3.15; CI uses GitHub's default 3.x), `make`,
 `openssl`, `bash`. On Windows use WSL (below). Developed and verified on macOS (Apple silicon) with Docker 29;
 CI runs everything on GitHub's x86_64 Ubuntu runners (section 13).
 
@@ -278,6 +280,34 @@ What each role may do ([sql/03_roles.sql](sql/03_roles.sql); every cell is check
 | `professor_role` | Read | Read | Read + update the **`grade` column only** | Read | **DENIED** |
 | `finance_role` | No | Read | No | No | Read / insert / update |
 | `admin_role` | All | All | All | All | All - but only inside `university.*` |
+
+The same model as a picture - note the one **`DENY`** (red, dashed) cutting through the professor's broad
+`university.*` grant, which is the heart of the project:
+
+```mermaid
+flowchart LR
+  alice([alice_student]) --> SR[student_role]
+  smith([smith_professor]) --> PR[professor_role]
+  jones([jones_finance]) --> FR[finance_role]
+  uadm([uni_admin]) --> AR[admin_role]
+
+  SR -->|"SELECT"| courses[(courses)]
+  SR -->|"SELECT own rows"| myg[(my_grades view)]
+  PR -->|"SELECT university.*"| courses
+  PR -->|"SELECT university.*"| students[(students)]
+  PR -->|"UPDATE grade column only"| grades[(grades)]
+  PR -. "DENY SELECT" .-> fin[(financial_records)]
+  FR -->|"SELECT"| students
+  FR -->|"SELECT / INSERT / UPDATE"| fin
+  AR -->|"ALL PRIVILEGES on university.*"| univ[(all university tables)]
+
+  classDef denied stroke:#c0392b,stroke-width:2px,color:#c0392b;
+  class fin denied;
+  linkStyle 9 stroke:#c0392b,stroke-width:2px;
+```
+
+A professor is granted `SELECT` on all of `university.*`, but the `DENY` on `financial_records` wins and
+cannot be lifted by any later or broader `GRANT` - only by an explicit `REVOKE DENY` (section 7).
 
 ```sql
 CREATE ROLE professor_role;
@@ -574,7 +604,10 @@ Complete output of a clean run: [docs/demo-output.txt](docs/demo-output.txt).
 Everything here was observed on **13.1.1-rc** (a release candidate - behaviour may change; the CI "canary" job
 re-runs the tests weekly against the floating `13.1` tag to notice). Each finding is reproduced by an
 experiment or a test that asserts the observed behaviour (finding 8 by `make lockout`, which exits non-zero
-if any step differs).
+if any step differs). Some of these confirm the documentation in a combination worth seeing for yourself
+(3 definer views, 4 column visibility, 6 pattern names); others go **past or against** it - a fail-open
+window the docs do not mention (1), a DENY that can be shed (2), a database DENY that survives `DROP`
+contrary to the reference (7), and a user-enumeration oracle (12).
 
 1. **A DENY on an inherited role is not enforced until the role graph is rebuilt (fail-open window).**
    After `DENY SELECT ON t TO role_c`, where `role_c` is granted to `role_b`, granted to the role the user
@@ -605,10 +638,13 @@ if any step differs).
 6. **Database names in GRANT/DENY are patterns.** `GRANT SELECT ON exp_lab_a.*` also grants `exp1lab1a`
    (each `_` is a wildcard); escape as `` `exp\_lab\_a` ``. A DENY written as a pattern is ignored when a
    more specific (exact) entry exists, so the broad DENY silently does nothing. (experiment 11)
-7. **DENYs outlive what they point to.** `DROP DATABASE` leaves a database-level DENY; a re-created database
-   with the same name is silently denied again. The [DENY reference](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/deny)
-   does not mention this, and it is the opposite of a routine DENY, which *is* removed by `DROP` (experiment 13);
-   so an administrator who recreates a database can be surprised by a stale deny. (experiment 4)
+7. **A database-level DENY outlives `DROP DATABASE` - contradicting the reference.** The
+   [DENY reference](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/deny)
+   states that *"dropping the object a deny points at also removes the deny"*. That holds for a **routine**
+   DENY - `DROP FUNCTION`/`DROP PROCEDURE` removes it (experiment 13) - but **not** for a database: after
+   `DROP DATABASE`, the database-level DENY remains, and a database later re-created with the same name is
+   silently denied again (experiment 4). So the documented rule is true for routines and false for databases;
+   an administrator who recreates a database can be surprised by a stale deny.
 8. **`DENY ... TO PUBLIC` applies to every administrator, and can lock them all out.** Existing sessions keep
    working; new ones are denied. For a database-level PUBLIC deny the administrator recovers with
    `REVOKE DENY ... FROM PUBLIC` (experiment 7). The hard lockout is reproduced on a **disposable server**
@@ -927,6 +963,7 @@ PARSEC (`test_parsec_roles.py`); restoring the DENY gave 278 passed again. With
     ├── test-output.txt          `pytest -v` with coverage, same run
     ├── lockout-output.txt       `make lockout`, same run
     ├── zerotls-output.txt       `make zerotls` - "SSL on by default", what it gives and lacks
+    ├── cheatsheet.md            one-page copy-paste reference of every pattern (for newcomers)
     ├── our-version.md           our pair's additions (PARSEC, work factor, MITM), written up
     ├── benchmark-output.txt     captured `make benchmark`
     ├── parsec-demo-output.txt   captured `make parsec` (24/24)

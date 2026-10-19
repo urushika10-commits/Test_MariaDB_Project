@@ -81,7 +81,7 @@ REVOKE DENY SELECT ON exp_lab.* FROM PUBLIC;
 SELECT * FROM exp_lab.pub_t;
 
 -- @takeaway Misconfigurations mostly fail silently (mistake 2) or lock people out (1 and 3). SHOW GRANTS and information_schema.*_privileges are the audit tools; REVOKE / REVOKE DENY at the exact level are the repair tools.
--- @takeaway A PUBLIC DENY is the sharpest edge of the feature. The official docs warn that denying UPDATE on mysql.global_priv to PUBLIC removes even the recovery path; that case is NOT reproduced here because recovering needs a server restart with privilege checks disabled.
+-- @takeaway A PUBLIC DENY is the sharpest edge of the feature. The official docs warn that denying UPDATE on mysql.global_priv to PUBLIC removes even the recovery path. That hard lockout is reproduced in experiment 14 (make lockout) on a disposable server, not here, because recovering from it needs a server restart with privilege checks disabled; this experiment covers the recoverable cases only.
 
 -- @phase cleanup
 -- @as dba
