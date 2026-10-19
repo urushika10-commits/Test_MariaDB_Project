@@ -1,0 +1,44 @@
+==============================================================================
+ Experiment 15: SSL on by default, no configuration (disposable server university-zerotls-99652)
+==============================================================================
+
+Step 1
+    Check    TLS is available with no --ssl-* options at all (SSL on by default)
+    Expected to contain: YES
+    Actual   have_ssl	YES
+    Result   PASS
+
+Step 2
+    Check    No certificate was configured: ssl_cert is empty (the server auto-generated one)
+    Expected to contain: ssl_cert	
+    Actual   ssl_cert	
+    Result   PASS
+
+Step 3
+    Check    Plaintext is NOT forced: require_secure_transport is OFF by default
+    Expected to contain: OFF
+    Actual   require_secure_transport	OFF
+    Result   PASS
+
+Step 4
+    Check    A client gets real encryption out of the box: TLS 1.3 over TCP, no CA given
+    Expected to contain: TLSv1.3
+    Actual   WARNING: option --ssl-verify-server-cert is disabled, because of an insecure passwordless login. Ssl_version	TLSv1.3
+    Result   PASS
+
+Step 5
+    Check    ...but the same client can also connect in PLAINTEXT - TLS is not required
+    Expected to contain: plaintext-ok
+    Actual   plaintext-ok
+    Result   PASS
+
+------------------------------------------------------------------------------
+ Conclusion: zero-config TLS gives ENCRYPTION but not VERIFICATION, and does
+ not REQUIRE TLS. The auto cert is self-signed and ephemeral, so a client has
+ nothing to check it against - an impostor (section 12) is accepted, and a
+ plaintext connection is accepted too. This project therefore adds its own CA,
+ ssl_verify_cert + ssl_verify_identity, and require_secure_transport=ON
+ (section 9). That is the gap between 'SSL on by default' and verified TLS.
+------------------------------------------------------------------------------
+
+-> 15_zero_config_tls.sh: 5 passed, 0 failed

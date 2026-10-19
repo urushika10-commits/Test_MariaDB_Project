@@ -23,7 +23,7 @@ Three pieces:
 
 How values reach SQL: MariaDB only accepts a string LITERAL inside
 PASSWORD(...) - a server-side placeholder (?) or a variable (@pw) is a syntax
-error (1064), verified on 13.1.2. So a password can only travel as an escaped
+error (1064), verified on 13.1.1-rc. So a password can only travel as an escaped
 literal. Over a driver connection PyMySQL's %s parameters do exactly that.
 Through `docker exec` there is no driver connection, so socket_sql() uses the
 very same escaping function as the driver (pymysql.converters.escape_item),

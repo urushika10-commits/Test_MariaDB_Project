@@ -1,5 +1,5 @@
 -- @title Experiment 2: privileges and denies through several roles
--- @goal Find a MariaDB 13.1.2 limitation: a DENY on an inherited role is not enforced until the role graph is rebuilt.
+-- @goal Find a MariaDB 13.1.1-rc limitation: a DENY on an inherited role is not enforced until the role graph is rebuilt.
 -- @goal See how privileges flow down a chain of roles, and how a DENY deep in the role graph interacts with a GRANT elsewhere.
 -- Role graph built below:    exp_team --> exp_readers   (GRANT SELECT on both tables)
 --                            exp_team --> exp_guard --> exp_audit_block   (DENY SELECT on t_audit)
@@ -50,7 +50,7 @@ SELECT * FROM exp_lab.t_audit;
 DENY SELECT ON exp_lab.t_audit TO exp_audit_block;
 
 -- @as exp_u
--- @why Part 2 - A FINDING (MariaDB 13.1.2): the DENY exists but is NOT enforced yet. A DENY on a role that is inherited by another role only takes effect after the server rebuilds its role graph. Until then the user is still allowed (fail-open).
+-- @why Part 2 - A FINDING (MariaDB 13.1.1-rc): the DENY exists but is NOT enforced yet. A DENY on a role that is inherited by another role only takes effect after the server rebuilds its role graph. Until then the user is still allowed (fail-open).
 -- @expect rows 1
 SELECT * FROM exp_lab.t_audit;
 

@@ -1,6 +1,6 @@
 """
 test_deny_semantics.py - GRANT/DENY conflicts, role inheritance, column-level
-privileges, REVOKE DENY and MariaDB-specific edge cases (MariaDB 13.1.2).
+privileges, REVOKE DENY and MariaDB-specific edge cases (MariaDB 13.1.1-rc).
 
 Each test builds its own throw-away database, roles and accounts (see the
 `lab` fixture in conftest.py), so tests are independent and repeatable. The
@@ -94,7 +94,7 @@ def test_role_must_be_active_and_granted(lab):
 
 
 def test_deny_in_a_nested_role_beats_grant_in_another_branch_after_flush(lab):
-    """Documented behaviour of 13.1.2: a DENY on an INHERITED role is only enforced once the
+    """Documented behaviour of 13.1.1-rc: a DENY on an INHERITED role is only enforced once the
     role graph is rebuilt. Before FLUSH PRIVILEGES the user is still allowed (fail-open).
     If this test starts failing at the first assertion, the server was fixed: update the README."""
     team, readers, guard = lab.role("team"), lab.role("readers"), lab.role("guard")

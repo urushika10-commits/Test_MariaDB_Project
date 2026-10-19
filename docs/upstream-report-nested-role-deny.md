@@ -3,8 +3,8 @@
 Prepared for the MariaDB Jira (project MDEV, component "Authentication and Privilege System"). It has **not
 been filed** yet; this file is the text to file.
 
-**Affects version:** 13.1.2 (`13.1.2-MariaDB-ubu2604`), Docker image
-`quay.io/mariadb-foundation/mariadb-devel@sha256:ed1087249cadb93623dd3b11258ea9790ad8f49c328dae5a5ef726ff1cea2931`
+**Affects version:** 13.1.1-rc (`13.1.1-MariaDB-ubu2604`), Docker image
+`mariadb:13.1.1-rc@sha256:a652753786e98d9f976aaab8cc21e49c16ea0cfe41a877694825a6ea73140fb1`
 (arm64 and x86_64). Feature: DENY / negative grants (MDEV-14443).
 
 ## Summary
@@ -44,7 +44,7 @@ SELECT * FROM db1.t;
 
 **Expected:** `ERROR 1142 (42000): SELECT command denied to user 'u1'@... for table db1.t`
 
-**Actual (13.1.2):**
+**Actual (13.1.1-rc):**
 ```
 +------+
 | id   |
@@ -84,6 +84,7 @@ attach the deny to the active role or to the accounts.
 
 ## Where this is demonstrated
 
-In <https://github.com/alexkhovrenkov/test_project_DB>: `experiments/02_multi_role_inheritance.sql` (step by
-step) and `tests/test_deny_semantics.py::test_deny_in_a_nested_role_beats_grant_in_another_branch_after_flush`
+In <https://github.com/urushika10-commits/Test_MariaDB_Project>: `experiments/02_multi_role_inheritance.sql`
+(step by step) and
+`tests/integration/test_deny_semantics.py::test_deny_in_a_nested_role_beats_grant_in_another_branch_after_flush`
 (asserts the current behaviour, and says so if a newer build fixes it).
