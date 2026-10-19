@@ -8,14 +8,20 @@ A project for area 5, "Authentication and access control" for the [MariaDB stude
 **MariaDB version:** 13.1.1 (`13.1.1-MariaDB-ubu2604`, a release candidate). [docker-compose.yml](docker-compose.yml) uses,
 by default, the exact build all results below come from, pinned by digest:
 `mariadb:13.1.1-rc@sha256:a652753786e98d9f976aaab8cc21e49c16ea0cfe41a877694825a6ea73140fb1`.
-To try the latest 13.1 build instead, put `MARIADB_IMAGE=mariadb:13.1` in
-`.env` (CI does this weekly in its "canary" job).
+To try the latest 13.1 build instead, put `MARIADB_IMAGE=mariadb:13.1-rc` in
+`.env`. CI's weekly "canary" job does the same idea with the upstream
+`quay.io/mariadb-foundation/mariadb-devel:13.1` build (it is allowed to fail - section 13).
 
 ```bash
 git clone https://github.com/urushika10-commits/Test_MariaDB_Project.git && cd Test_MariaDB_Project
 make demo      # creates certificates, starts MariaDB 13.1, runs every demonstration (no password to configure)
 make test      # 278 tests: 113 unit + 165 integration tests against the real server
 ```
+
+> **New here? The short path (about 15 minutes).** Run `make demo` and watch the PASS lines. Then read just
+> four sections: **§6 Roles**, **§7 DENY**, **§8 Authentication** and **§9 TLS** - that is the whole feature.
+> [examples/README.md](examples/README.md) has a 10-minute hands-on "Start here". Everything from §10 on
+> (the 14+ experiments, the findings, our pair's attacks) is depth you can skip on a first read.
 
 ## Contents
 
@@ -71,13 +77,13 @@ method instead of a password in a config file, verified TLS, then attack the set
 | Reproducible from the README on a fresh server | `make demo`; section 3; verified from a clean copy (section 13) |
 | Which control stops which attack, what remains unprotected | sections 12 and 15 |
 
-> **Our pair's additions** (branch `pair-b`) go beyond the above and are written up in
+> **Our pair's additions** (merged into `main`) go beyond the above and are written up in
 > **[docs/our-version.md](docs/our-version.md)**, runnable with `make attack`:
 > (1) **PARSEC** authentication implemented in pure Python and shown to drive the *whole* role/`DENY`
 > model (24/24, identical to ed25519); (2) a **measured** offline work-factor comparison of the three
 > stored formats, with variance and a `parsec_iterations` sweep; (3) a **real man-in-the-middle** proxy
 > that reads the session when the client does not verify TLS and is refused when it does. ed25519 is kept
-> as the documented comparison. This branch also fixes reproducibility on a clean macOS and moves to the
+> as the documented comparison. These changes also fix reproducibility on a clean macOS and move to the
 > official `mariadb:13.1.1-rc` image.
 
 ## 2. Why MariaDB, and why 13.1
@@ -92,6 +98,7 @@ MariaDB-specific here:
 | **`unix_socket` authentication** | The operating-system user *is* the credential: `root@localhost` has no password at all and can only be used inside the container. Default plugin for root in MariaDB packages since 10.4. |
 | **MariaDB role model** (`CREATE ROLE`, `SET DEFAULT ROLE`, one active role at a time, roles inside roles) | Differs from MySQL 8 roles and from PostgreSQL's `INHERIT` roles; experiments 2 and 8 depend on these exact semantics. |
 | **Privileges as JSON in `mysql.global_priv`** | DENYs are stored in the `denies` key (section 7); `FLUSH PRIVILEGES` rebuilds the role graph (experiment 2). |
+| **SSL on by default** (auto-generated certificate, `have_ssl=YES` with no configuration) | MariaDB offers TLS 1.3 out of the box with no `--ssl-*` options; we examine exactly what that gives and where it falls short (experiment 15, section 9). |
 | `ACCOUNT LOCK`, `PASSWORD EXPIRE`, `require_secure_transport`, `tls_version`, `PUBLIC` pseudo-role | Used in the authentication and TLS tests. |
 
 **How DENY changes the security model.** Classic SQL access control is *additive*: the user can do
@@ -106,7 +113,7 @@ SHA-1-derived hash that is *password-equivalent*: anyone who steals `mysql.user`
 ED25519 the server stores only a public key; the client proves knowledge of the password by signing a random
 challenge, and the password never crosses the network. Our test uses the stored value as a password and is
 rejected (section 8). ED25519 works with a plain `pip install` of PyMySQL; PARSEC normally needs the compiled C
-connector, so we implemented its client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)) and use it as a primary network method too (section 8). For the one account that never needs the network - root - `unix_socket` is better still: there
+connector, so we implemented its client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)) and demonstrate it driving the full role model (section 8). For the one account that never needs the network - root - `unix_socket` is better still: there
 is no password to steal at all. Together they remove the classic weak point the area brief names, a
 password sitting in a configuration file: nothing in this repository or on disk holds one (section 8).
 
@@ -353,8 +360,8 @@ data directory - and every account still has a real authentication method:
 | Method named in the brief | Used for |
 |---|---|
 | **Unix socket** ✅ | root. No password at all; only usable inside the container. Not suitable for the application, which connects over the network (TLS would be pointless over a local socket). |
-| **ED25519** ✅ | every network demo account. Ships with MariaDB, works with `pip install pymysql[ed25519]`, works over TLS. Kept as the documented comparison for PARSEC. |
-| **PARSEC** ✅ | implemented and demonstrated as a primary network method. PyMySQL cannot speak PARSEC and the C connector needs a compiler, so we wrote the client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)) and drove the whole role/`DENY` matrix with it (24/24, [app/parsec_demo.py](app/parsec_demo.py)); it also wins the stolen-hash attack over ED25519 ([benchmarks/work_factor.py](benchmarks/work_factor.py)). See [docs/our-version.md](docs/our-version.md). |
+| **ED25519** ✅ | the authentication of the four **persistent** demo accounts (`sql/04_users.sql`). Ships with MariaDB, works with `pip install pymysql[ed25519]`, works over TLS. Kept as the documented comparison for PARSEC. |
+| **PARSEC** ✅ | implemented and demonstrated end-to-end. PyMySQL cannot speak PARSEC and the C connector needs a compiler, so we wrote the client protocol in pure Python ([app/parsec_auth.py](app/parsec_auth.py)). A PARSEC account for each role is created by `make parsec` and the integration tests, and drives the **identical** role/`DENY` matrix over verified TLS (24/24, [app/parsec_demo.py](app/parsec_demo.py)); PARSEC also wins the stolen-hash attack over ED25519 ([benchmarks/work_factor.py](benchmarks/work_factor.py)). The persistent accounts stay ED25519 so its findings hold; PARSEC is proven a drop-in. See [docs/our-version.md](docs/our-version.md). |
 
 **How it is built** ([sql/04_users.sql](sql/04_users.sql), [sql/06_lockdown.sh](sql/06_lockdown.sh),
 [app/admin.py](app/admin.py)):
@@ -462,6 +469,16 @@ Attacks and results ([tests/integration/test_authentication.py](tests/integratio
 
 ## 9. TLS that is verified, not assumed
 
+**Start from the default the brief names: "SSL on by default with no configuration".** We checked what that
+actually is on MariaDB 13.1 with a disposable server given *no* `--ssl-*` options at all
+([experiments/15_zero_config_tls.sh](experiments/15_zero_config_tls.sh), `make zerotls`, output in
+[docs/zerotls-output.txt](docs/zerotls-output.txt)): `have_ssl` is already `YES`, a client gets **TLS 1.3**
+out of the box, and `ssl_cert` is empty - the certificate is auto-generated, self-signed and in memory. But
+that is encryption only: there is no CA to verify it against, and `require_secure_transport` is `OFF`, so a
+plaintext connection is accepted too. So the default protects against a passive sniffer and nothing else - an
+impostor server (section 12) is accepted, and so is cleartext. The rest of this section is what the project
+adds to turn that into *verified, required* TLS.
+
 TLS does two separate jobs: **encryption** (nobody on the network reads queries and results) and **server
 authentication** (the client checks it reached *our* server). A client that encrypts but does not verify
 ends up with an encrypted connection *to the attacker*. **PyMySQL 1.2's default is exactly that**: with no TLS options it
@@ -505,7 +522,7 @@ and the quiet finding - that even over a successful MITM, PARSEC leaks no reusab
 
 ## 10. Security experiments (advanced)
 
-Experiments 1-13 are annotated SQL files (14 is a shell script, because it needs its own throw-away server).
+Experiments 1-13 are annotated SQL files (14 and 15 are shell scripts, because they each need their own throw-away server).
 Each step is run **as the named user**, over verified TLS, and
 printed with SQL, expected result, actual result and PASS/FAIL, plus a "Why" explanation and a security
 takeaway. Initial configuration is the visible `[setup]` block at the top of each run. Each file removes
@@ -539,13 +556,14 @@ Step 3  user: exp_viewer  (active role: none)
 | 12 | [password_policy](experiments/12_password_policy.sql) | Do the validation and reuse plugins guard ED25519 accounts? What gets through? | Weak and reused passwords refused (1819/1396/1290); refused passwords recorded, history outlives `DROP USER`, shared passwords allowed (findings 9-11) |
 | 13 | [routine_deny](experiments/13_routine_deny.sql) | `DENY EXECUTE ON PROCEDURE/FUNCTION` inside a schema-wide `GRANT EXECUTE` | Calls refused (1370), routine hidden from `INFORMATION_SCHEMA.ROUTINES`, type required (1144), `DROP` removes the deny and re-creating does not restore it |
 | 14 | [public_lockout](experiments/14_public_lockout.sh) (shell, `make lockout`) | PUBLIC hard lockout on a disposable server, and every recovery path | Documented recovery works for `DENY UPDATE`; with `DENY UPDATE, DELETE` only `--skip-grant-tables` helps (finding 8) |
+| 15 | [zero_config_tls](experiments/15_zero_config_tls.sh) (shell, `make zerotls`) | "SSL on by default": what TLS a server with no `--ssl-*` config actually gives | `have_ssl=YES`, TLS 1.3 from an auto-generated self-signed cert, but unverifiable and plaintext still allowed (section 9) |
 
 And five standalone tutorial lessons in [examples/](examples/) (roles, DENY, inheritance, column privileges,
 ED25519 failures) - see [examples/README.md](examples/README.md) for how to follow them with any SQL client.
 
 Run them:
 ```bash
-make experiments                                       # experiments 1-13 (14: make lockout)
+make experiments                                       # experiments 1-13 (14: make lockout, 15: make zerotls)
 .venv/bin/python app/sqlrunner.py experiments/08_deny_scope_role_vs_user.sql   # one
 .venv/bin/python app/sqlrunner.py --quiet experiments/ # only PASS/FAIL lines
 ```
@@ -588,7 +606,9 @@ if any step differs).
    (each `_` is a wildcard); escape as `` `exp\_lab\_a` ``. A DENY written as a pattern is ignored when a
    more specific (exact) entry exists, so the broad DENY silently does nothing. (experiment 11)
 7. **DENYs outlive what they point to.** `DROP DATABASE` leaves a database-level DENY; a re-created database
-   with the same name is silently denied again. (experiment 4)
+   with the same name is silently denied again. The [DENY reference](https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/deny)
+   does not mention this, and it is the opposite of a routine DENY, which *is* removed by `DROP` (experiment 13);
+   so an administrator who recreates a database can be surprised by a stale deny. (experiment 4)
 8. **`DENY ... TO PUBLIC` applies to every administrator, and can lock them all out.** Existing sessions keep
    working; new ones are denied. For a database-level PUBLIC deny the administrator recovers with
    `REVOKE DENY ... FROM PUBLIC` (experiment 7). The hard lockout is reproduced on a **disposable server**
@@ -695,7 +715,7 @@ privilege silently returns `NULL` instead of an error.
 | Bypass the policy with a pre-computed key | `strict_password_validation` | `test_precomputed_public_key_is_refused...` | 1290 |
 | Locked / expired account | `ACCOUNT LOCK`, `PASSWORD EXPIRE` | `test_locked_account...`, `test_expired_password...` | 4151 / 1820 |
 | SQL injection through the app | parameters + input validation | `test_update_grade_rejects_injection_payloads` | ValueError / no match |
-| Offline guessing of a stolen credential | PARSEC salt + PBKDF2 iterations (vs unsalted ed25519/native) | `benchmarks/work_factor.py`, `test_parsec_auth.py` | ~680x slower than native |
+| Offline guessing of a stolen credential | PARSEC salt + PBKDF2 iterations (vs unsalted ed25519/native) | `benchmarks/work_factor.py`, `test_parsec_auth.py` | ~700x slower than native |
 | Impostor server reading the whole session | verified TLS (`ssl_verify_cert` + identity) vs a real MITM proxy | `attacks/mitm_demo.py`, `test_mitm.py` | refused (unverified: 578 bytes read) |
 | Reading forbidden data under PARSEC auth | roles + `DENY`, unchanged by the auth method | `app/parsec_demo.py`, `test_parsec_roles.py` | 1142 (24/24) |
 
@@ -782,6 +802,7 @@ PARSEC (`test_parsec_roles.py`); restoring the DENY gave 278 passed again. With
 | Tutorial (section 10) | `make examples` | `TOTAL: 108 steps passed, 0 failed` |
 | All experiments / one experiment | `make experiments` / `.venv/bin/python app/sqlrunner.py experiments/08_deny_scope_role_vs_user.sql` | `... N passed, 0 failed` |
 | PUBLIC hard lockout (finding 8) | `make lockout` | `-> 14_public_lockout.sh: 13 passed, 0 failed` |
+| SSL on by default, no config (section 9) | `make zerotls` | `-> 15_zero_config_tls.sh: 5 passed, 0 failed` |
 | Password policy (findings 9-11) | `.venv/bin/python -m pytest tests/integration/test_password_policy.py -v` | all PASSED |
 | ED25519 attacks (section 8) | `.venv/bin/python -m pytest tests/integration/test_authentication.py -v` | all PASSED |
 | TLS attacks (section 9) | `.venv/bin/python -m pytest tests/integration/test_tls.py -v` | all PASSED |
@@ -896,7 +917,8 @@ PARSEC (`test_parsec_roles.py`); restoring the DENY gave 278 passed again. With
 │   ├── mitm_proxy.py            MySQL-aware TLS-terminating man-in-the-middle proxy - our addition
 │   └── mitm_demo.py             runs the MITM: succeeds unverified, blocked when verified - our addition
 ├── examples/                    5 standalone SQL lessons + README with a 10-minute "Start here"
-├── experiments/                 13 annotated SQL experiments + 14_public_lockout.sh (disposable server)
+├── experiments/                 13 annotated SQL experiments + 14_public_lockout.sh and
+│                                     15_zero_config_tls.sh (disposable servers)
 ├── tests/
 │   ├── unit/                    113 tests, no server needed (incl. test_parsec_auth.py, test_work_factor.py)
 │   └── integration/             165 tests against the real server (incl. test_parsec_roles.py, test_mitm.py)
@@ -904,6 +926,7 @@ PARSEC (`test_parsec_roles.py`); restoring the DENY gave 278 passed again. With
     ├── demo-output.txt          complete output of `make demo` from a fresh clone
     ├── test-output.txt          `pytest -v` with coverage, same run
     ├── lockout-output.txt       `make lockout`, same run
+    ├── zerotls-output.txt       `make zerotls` - "SSL on by default", what it gives and lacks
     ├── our-version.md           our pair's additions (PARSEC, work factor, MITM), written up
     ├── benchmark-output.txt     captured `make benchmark`
     ├── parsec-demo-output.txt   captured `make parsec` (24/24)

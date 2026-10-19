@@ -1,7 +1,7 @@
-# Our pair's version: PARSEC as primary, and attacks with measured results
+# Our pair's version: PARSEC implemented, and attacks with measured results
 
-This branch (`pair-b`) builds on the shared base and adds the three things the
-first version did not do. Everything here runs with one command:
+These additions (developed on `pair-b`, now merged into `main`) build on the shared
+base and add the three things the first version did not do. Everything here runs with one command:
 
 ```bash
 make attack      # PARSEC role demo + the stolen-hash work factor + the MITM

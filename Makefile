@@ -17,7 +17,7 @@ CONTAINER := $(or $(MARIADB_CONTAINER),university-db)
 USER_NAME := $(if $(filter command line,$(origin USER)),$(USER),)
 
 .DEFAULT_GOAL := help
-.PHONY: help certs up venv setup demo roles examples experiments test unit set-password shell sql lockout down reset clean lint attack parsec benchmark mitm
+.PHONY: help certs up venv setup demo roles examples experiments test unit set-password shell sql lockout zerotls down reset clean lint attack parsec benchmark mitm
 
 help:
 	@echo "make demo                   start MariaDB 13.1 (first run: also certificates and venv) and run every demonstration"
@@ -34,6 +34,7 @@ help:
 	@echo "make sql USER=...           open the mariadb client as that demo account (asks for its password)"
 	@echo "make shell                  open the mariadb client as root (unix_socket, no password)"
 	@echo "make lockout                experiment 14: PUBLIC hard lockout + recovery on a DISPOSABLE server"
+	@echo "make zerotls                experiment 15: 'SSL on by default' with no config, on a DISPOSABLE server"
 	@echo "make down                   stop the server (keeps the data)"
 	@echo "make reset                  stop the server and DELETE its data; next 'make up' starts from scratch"
 	@echo "make clean                  reset + delete certificates and the virtual environment"
@@ -113,6 +114,9 @@ sql:
 
 lockout:
 	bash experiments/14_public_lockout.sh
+
+zerotls:
+	bash experiments/15_zero_config_tls.sh
 
 down:
 	$(COMPOSE) down
