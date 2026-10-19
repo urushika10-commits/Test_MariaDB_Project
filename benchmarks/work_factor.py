@@ -24,6 +24,7 @@ import statistics
 import time
 
 from nacl import bindings
+from nacl.signing import SigningKey
 
 # --- the three stored formats, each verified against MariaDB 13.1.1 -------------
 
@@ -51,11 +52,15 @@ def ed25519_stored(password):
 
 
 def parsec_stored(password, salt, iterations=1024):
-    """PARSEC: ed25519 public key of PBKDF2-HMAC-SHA512. Salted and iterated."""
+    """PARSEC: ed25519 public key whose seed is PBKDF2-HMAC-SHA512. Salted and iterated.
+
+    The seed is the 32-byte PBKDF2 output; the ed25519 public key is derived from it
+    the standard way (as MariaDB stores it), which is what nacl's SigningKey does.
+    """
     if isinstance(password, str):
         password = password.encode()
     seed = hashlib.pbkdf2_hmac("sha512", password, salt, iterations, 32)
-    return bindings.crypto_scalarmult_ed25519_base_noclamp(_clamp(seed))
+    return bytes(SigningKey(seed).verify_key)
 
 
 # --- measuring the cost of one guess --------------------------------------------
