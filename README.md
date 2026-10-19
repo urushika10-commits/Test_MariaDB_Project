@@ -291,15 +291,15 @@ flowchart LR
   jones([jones_finance]) --> FR[finance_role]
   uadm([uni_admin]) --> AR[admin_role]
 
-  SR -->|SELECT| courses[(courses)]
-  SR -->|SELECT own rows| myg[(my_grades view)]
-  PR -->|SELECT university.*| courses
-  PR -->|SELECT university.*| students[(students)]
-  PR -->|UPDATE grade column only| grades[(grades)]
-  PR -. DENY SELECT .-> fin[(financial_records)]
-  FR -->|SELECT| students
-  FR -->|SELECT / INSERT / UPDATE| fin
-  AR -->|ALL PRIVILEGES on university.*| univ[(all university tables)]
+  SR -->|"SELECT"| courses[(courses)]
+  SR -->|"SELECT own rows"| myg[(my_grades view)]
+  PR -->|"SELECT university.*"| courses
+  PR -->|"SELECT university.*"| students[(students)]
+  PR -->|"UPDATE grade column only"| grades[(grades)]
+  PR -. "DENY SELECT" .-> fin[(financial_records)]
+  FR -->|"SELECT"| students
+  FR -->|"SELECT / INSERT / UPDATE"| fin
+  AR -->|"ALL PRIVILEGES on university.*"| univ[(all university tables)]
 
   classDef denied stroke:#c0392b,stroke-width:2px,color:#c0392b;
   class fin denied;
