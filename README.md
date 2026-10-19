@@ -71,6 +71,15 @@ method instead of a password in a config file, verified TLS, then attack the set
 | Reproducible from the README on a fresh server | `make demo`; section 3; verified from a clean copy (section 13) |
 | Which control stops which attack, what remains unprotected | sections 12 and 15 |
 
+> **Our pair's additions** (branch `pair-b`) go beyond the above and are written up in
+> **[docs/our-version.md](docs/our-version.md)**, runnable with `make attack`:
+> (1) **PARSEC** authentication implemented in pure Python and shown to drive the *whole* role/`DENY`
+> model (24/24, identical to ed25519); (2) a **measured** offline work-factor comparison of the three
+> stored formats, with variance and a `parsec_iterations` sweep; (3) a **real man-in-the-middle** proxy
+> that reads the session when the client does not verify TLS and is refused when it does. ed25519 is kept
+> as the documented comparison. This branch also fixes reproducibility on a clean macOS and moves to the
+> official `mariadb:13.1.1-rc` image.
+
 ## 2. Why MariaDB, and why 13.1
 
 The project is about MariaDB's own access-control engine; a Python app is only the client. What is
@@ -135,10 +144,12 @@ Every step prints `PASS`/`FAIL`; any failure makes `make` exit non-zero.
 | Command | Does |
 |---|---|
 | `make demo` | everything above |
-| `make test` | start the server if needed, run all 260 tests with coverage of `app/` |
+| `make test` | start the server if needed, run the full test suite (260 base + 12 for our pair's additions) with coverage of `app/` |
 | `make unit` | only the 100 unit tests - no server, no Docker needed |
 | `make lint` | ruff (Python) and shellcheck (shell scripts) |
 | `make roles` / `make examples` / `make experiments` | one part of the demo |
+| `make attack` | our pair's additions: PARSEC role demo + stolen-hash work factor + the MITM (see [docs/our-version.md](docs/our-version.md)) |
+| `make parsec` / `make benchmark` / `make mitm` | one of those three on its own |
 | `make lockout` | experiment 14 on its own disposable server |
 | `make set-password USER=smith_professor` | choose a password for a demo account (typed, never stored) and unlock it |
 | `make sql USER=smith_professor` | `mariadb` client as that account (asks for the password) |

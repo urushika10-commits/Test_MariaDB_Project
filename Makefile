@@ -17,7 +17,7 @@ CONTAINER := $(or $(MARIADB_CONTAINER),university-db)
 USER_NAME := $(if $(filter command line,$(origin USER)),$(USER),)
 
 .DEFAULT_GOAL := help
-.PHONY: help certs up venv setup demo roles examples experiments test unit set-password shell sql lockout down reset clean lint
+.PHONY: help certs up venv setup demo roles examples experiments test unit set-password shell sql lockout down reset clean lint attack parsec benchmark mitm
 
 help:
 	@echo "make demo                   start MariaDB 13.1 (first run: also certificates and venv) and run every demonstration"
@@ -26,6 +26,10 @@ help:
 	@echo "make roles                  role demo only: the same six actions as each of the four roles"
 	@echo "make examples               the standalone SQL tutorial (examples/*.sql)"
 	@echo "make experiments            the advanced security experiments (experiments/*.sql)"
+	@echo "make attack                 our pair's attacks: PARSEC role demo, the stolen-hash work factor, the MITM"
+	@echo "make parsec                 PARSEC role demo only: the full role/DENY matrix under PARSEC over verified TLS"
+	@echo "make benchmark              offline work-factor of the three stored formats (guesses/s, mean +/- sd)"
+	@echo "make mitm                   man-in-the-middle against TLS: succeeds unverified, blocked when verified"
 	@echo "make set-password USER=...  choose a password for a demo account (asked for, never stored)"
 	@echo "make sql USER=...           open the mariadb client as that demo account (asks for its password)"
 	@echo "make shell                  open the mariadb client as root (unix_socket, no password)"
@@ -70,6 +74,26 @@ demo: roles examples experiments
 	@echo
 	@echo "Demo finished: every step above ended in PASS. Run 'make test' for the pytest suite."
 
+# --- our pair's additions: PARSEC as primary, and attacks with measured results ---
+parsec: setup
+	$(PYTHON) app/parsec_demo.py
+
+benchmark: venv
+	$(PYTHON) benchmarks/work_factor.py
+
+mitm: setup
+	$(PYTHON) attacks/mitm_demo.py
+
+attack: setup
+	@echo "=== PARSEC role demo (the whole model, authenticated with PARSEC) ==="
+	$(PYTHON) app/parsec_demo.py
+	@echo
+	@echo "=== Stolen-hash work factor (guesses/s an attacker gets per format) ==="
+	$(PYTHON) benchmarks/work_factor.py
+	@echo
+	@echo "=== Man-in-the-middle against TLS (succeeds unverified, blocked verified) ==="
+	$(PYTHON) attacks/mitm_demo.py
+
 test: setup
 	$(PYTHON) -m pytest --cov=app --cov-report=term-missing
 
@@ -102,7 +126,7 @@ clean: reset
 SHELL_SCRIPTS := scripts/*.sh sql/*.sh experiments/*.sh
 
 lint: venv
-	$(PYTHON) -m ruff check app tests
+	$(PYTHON) -m ruff check app tests benchmarks attacks
 	@if command -v shellcheck >/dev/null; then shellcheck $(SHELL_SCRIPTS); \
 	else docker run --rm -v "$(CURDIR):/mnt" -w /mnt koalaman/shellcheck:stable $(SHELL_SCRIPTS); fi
 	@echo "lint: no findings"

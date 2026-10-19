@@ -1,0 +1,96 @@
+docker compose up -d --wait
+ Container university-db Running 
+ Container university-db Waiting 
+ Container university-db Healthy 
+=== PARSEC role demo (the whole model, authenticated with PARSEC) ===
+.venv/bin/python app/parsec_demo.py
+PARSEC role demo - the same model as the ed25519 demo, authenticated with PARSEC
+
+
+==============================================================================
+ ROLE: student   (PARSEC account: student_parsec)
+==============================================================================
+Logged in as : student_parsec@%   (active role: student_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected denied (error 1142) got denied (error 1142)    PASS
+[4/6] Read ALL grades  expected denied (error 1142) got denied (error 1142)    PASS
+[5/6] Change a grade   expected denied (error 1142) got denied (error 1142)    PASS
+[6/6] Read financial records (IBANs) expected denied (error 1142) got denied (error 1142)    PASS
+
+==============================================================================
+ ROLE: professor   (PARSEC account: professor_parsec)
+==============================================================================
+Logged in as : professor_parsec@%   (active role: professor_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected allowed            got allowed (7 rows)       PASS
+[5/6] Change a grade   expected allowed            got allowed                PASS
+[6/6] Read financial records (IBANs) expected denied (error 1142) got denied (error 1142)    PASS
+
+==============================================================================
+ ROLE: finance   (PARSEC account: finance_parsec)
+==============================================================================
+Logged in as : finance_parsec@%   (active role: finance_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected denied (error 1142) got denied (error 1142)    PASS
+[2/6] Read my own grades (view) expected denied (error 1142) got denied (error 1142)    PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected denied (error 1142) got denied (error 1142)    PASS
+[5/6] Change a grade   expected denied (error 1142) got denied (error 1142)    PASS
+[6/6] Read financial records (IBANs) expected allowed            got allowed (5 rows)       PASS
+
+==============================================================================
+ ROLE: admin   (PARSEC account: admin_parsec)
+==============================================================================
+Logged in as : admin_parsec@%   (active role: admin_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected allowed            got allowed (7 rows)       PASS
+[5/6] Change a grade   expected allowed            got allowed                PASS
+[6/6] Read financial records (IBANs) expected allowed            got allowed (5 rows)       PASS
+
+PARSEC role demo: 24/24 actions behaved as expected (identical to the ed25519 matrix).
+
+=== Stolen-hash work factor (guesses/s an attacker gets per format) ===
+.venv/bin/python benchmarks/work_factor.py
+machine guess-rate, mean +/- sd over 5 runs
+
+  mysql_native_password (SHA-1 x2, no salt)             2,403,668 +/-     31,442  guesses/s
+  ed25519 (SHA-512 -> curve, no salt)                       7,759 +/-        223  guesses/s
+  PARSEC (PBKDF2-SHA512 x1024, salted)                      3,343 +/-          4  guesses/s
+
+  Native is ~719x faster to attack than PARSEC per guess.
+  Caveat: the ed25519 figure reflects PyMySQL's pure-Python curve code, not an
+  optimised attacker (who derives ed25519 keys far faster); treat the native row
+  as the representative fast-hash rate. ed25519's real weakness is below: no salt.
+
+  PARSEC iteration scaling (salted; guesses/s falls ~linearly with iterations):
+      1,024 iterations (P0)        3,248 +/-      103  guesses/s
+      4,096 iterations (P2)        1,225 +/-        2  guesses/s
+     16,384 iterations (P4)          348 +/-        1  guesses/s
+     65,536 iterations (P6)           82 +/-       15  guesses/s
+
+  Per-account salt: same password -> different stored value: True.
+  So a stolen PARSEC value must be attacked on its own - no table reused across
+  accounts. The unsalted formats (native, ed25519) store one value per password,
+  so one precomputed table covers every account that ever used that password.
+
+=== Man-in-the-middle against TLS (succeeds unverified, blocked verified) ===
+.venv/bin/python attacks/mitm_demo.py
+Man-in-the-middle against MariaDB TLS (own server, throwaway account)
+
+  Attack A (client does NOT verify): impostor in path=True, query reached the server=True, bytes the attacker could read=578
+    -> ATTACK SUCCEEDS - an impostor read the whole session
+  Attack B (client verifies the CA): client refused the impostor=True, impostor saw no TLS session=True
+    -> ATTACK BLOCKED - verification stopped the man in the middle
+
+  Lesson: TLS without verification is TLS to whoever answers. Only verification
+  (ssl_verify_cert + ssl_verify_identity) ties the encrypted channel to OUR server.
+
+mitm_demo: 2/2 as expected
