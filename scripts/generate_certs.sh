@@ -71,6 +71,19 @@ quietly openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
     -keyout untrusted-ca-key.pem -out untrusted-ca.pem \
     -subj "/CN=Some Other CA"
 
+# 6. An IMPOSTOR server certificate for the man-in-the-middle attack
+#    (attacks/mitm_proxy.py). Same host name "localhost" as the real server, but
+#    signed by the untrusted CA above - so a verifying client rejects it and a
+#    non-verifying client accepts it. That difference is the whole lesson.
+quietly openssl req -newkey rsa:2048 -nodes \
+    -keyout proxy-key.pem -out proxy-req.pem \
+    -subj "/CN=localhost"
+quietly openssl x509 -req -in proxy-req.pem -days 365 \
+    -CA untrusted-ca.pem -CAkey untrusted-ca-key.pem -CAcreateserial \
+    -out proxy-cert.pem \
+    -extfile <(printf "subjectAltName=DNS:localhost")
+rm -f proxy-req.pem untrusted-ca.srl
+
 # Clean up helper files we no longer need.
 rm -f server-req.pem client-req.pem ca.srl
 

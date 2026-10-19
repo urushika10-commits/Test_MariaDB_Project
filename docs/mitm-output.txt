@@ -1,0 +1,11 @@
+Man-in-the-middle against MariaDB TLS (own server, throwaway account)
+
+  Attack A (client does NOT verify): impostor in path=True, query reached the server=True, bytes the attacker could read=578
+    -> ATTACK SUCCEEDS - an impostor read the whole session
+  Attack B (client verifies the CA): client refused the impostor=True, impostor saw no TLS session=True
+    -> ATTACK BLOCKED - verification stopped the man in the middle
+
+  Lesson: TLS without verification is TLS to whoever answers. Only verification
+  (ssl_verify_cert + ssl_verify_identity) ties the encrypted channel to OUR server.
+
+mitm_demo: 2/2 as expected
