@@ -42,8 +42,13 @@ certs:
 up: certs
 	$(COMPOSE) up -d --wait
 
+# The first Python 3.10+ found on PATH (or in Homebrew's directory). macOS ships 3.9 as
+# "python3", which is too old; override with  make demo BOOT_PYTHON=/path/to/python3.12
+BOOT_PYTHON ?= $(firstword $(foreach p,python3.14 python3.13 python3.12 python3.11 python3.10 python3 /opt/homebrew/bin/python3,$(shell command -v $(p) 2>/dev/null | xargs -I{} sh -c '{} -c "import sys; sys.exit(sys.version_info < (3, 10))" 2>/dev/null && echo {}')))
+
 .venv/.installed: requirements.txt requirements-dev.txt
-	python3 -m venv .venv
+	@if [ -z "$(BOOT_PYTHON)" ]; then echo "Python 3.10 or newer is required (macOS: brew install python)"; exit 2; fi
+	$(BOOT_PYTHON) -m venv .venv
 	$(PYTHON) -m pip install --quiet --upgrade pip
 	$(PYTHON) -m pip install --quiet -r requirements-dev.txt
 	touch $@

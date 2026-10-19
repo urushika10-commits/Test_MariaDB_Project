@@ -86,5 +86,7 @@ fi
 
 # Show what we made: who the certificate belongs to and who signed it.
 echo
-openssl x509 -in server-cert.pem -noout -subject -issuer -ext subjectAltName
+# (-ext is OpenSSL 3 only; this form also works with the LibreSSL that ships with macOS)
+openssl x509 -in server-cert.pem -noout -subject -issuer
+openssl x509 -in server-cert.pem -noout -text | grep -A1 "Subject Alternative Name"
 openssl verify -CAfile ca.pem server-cert.pem client-cert.pem
