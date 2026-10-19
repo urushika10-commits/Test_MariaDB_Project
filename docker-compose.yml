@@ -12,14 +12,14 @@ services:
     # By default: the exact 13.1.2 build every result in the README was produced
     # with (pinned by digest, so a newer preview build cannot change behaviour
     # under you). To try the newest 13.1 preview build, set in .env:
-    #   MARIADB_IMAGE=quay.io/mariadb-foundation/mariadb-devel:13.1
-    image: ${MARIADB_IMAGE:-quay.io/mariadb-foundation/mariadb-devel@sha256:ed1087249cadb93623dd3b11258ea9790ad8f49c328dae5a5ef726ff1cea2931}
+    #   MARIADB_IMAGE=mariadb:13.1-rc
+    image: ${MARIADB_IMAGE:-mariadb:13.1.1-rc@sha256:a652753786e98d9f976aaab8cc21e49c16ea0cfe41a877694825a6ea73140fb1}
     container_name: ${MARIADB_CONTAINER:-university-db}
 
     # No password is configured anywhere. The entrypoint creates root@localhost
     # with an empty password, reachable only through the socket of the
     # temporary init server (which runs with --skip-networking); no root@'%'
-    # account is created. The last init script (sql/05_lockdown.sh) switches
+    # account is created. The last init script (sql/06_lockdown.sh) switches
     # root to unix_socket authentication, so after init root has no password
     # at all and can only be used via "docker exec" (make shell).
     environment:

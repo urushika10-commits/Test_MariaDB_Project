@@ -1,0 +1,52 @@
+PARSEC role demo - the same model as the ed25519 demo, authenticated with PARSEC
+
+
+==============================================================================
+ ROLE: student   (PARSEC account: student_parsec)
+==============================================================================
+Logged in as : student_parsec@%   (active role: student_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected denied (error 1142) got denied (error 1142)    PASS
+[4/6] Read ALL grades  expected denied (error 1142) got denied (error 1142)    PASS
+[5/6] Change a grade   expected denied (error 1142) got denied (error 1142)    PASS
+[6/6] Read financial records (IBANs) expected denied (error 1142) got denied (error 1142)    PASS
+
+==============================================================================
+ ROLE: professor   (PARSEC account: professor_parsec)
+==============================================================================
+Logged in as : professor_parsec@%   (active role: professor_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected allowed            got allowed (7 rows)       PASS
+[5/6] Change a grade   expected allowed            got allowed                PASS
+[6/6] Read financial records (IBANs) expected denied (error 1142) got denied (error 1142)    PASS
+
+==============================================================================
+ ROLE: finance   (PARSEC account: finance_parsec)
+==============================================================================
+Logged in as : finance_parsec@%   (active role: finance_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected denied (error 1142) got denied (error 1142)    PASS
+[2/6] Read my own grades (view) expected denied (error 1142) got denied (error 1142)    PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected denied (error 1142) got denied (error 1142)    PASS
+[5/6] Change a grade   expected denied (error 1142) got denied (error 1142)    PASS
+[6/6] Read financial records (IBANs) expected allowed            got allowed (5 rows)       PASS
+
+==============================================================================
+ ROLE: admin   (PARSEC account: admin_parsec)
+==============================================================================
+Logged in as : admin_parsec@%   (active role: admin_role)
+TLS          : TLSv1.3  TLS_AES_256_GCM_SHA384  (server certificate verified against certs/ca.pem)
+[1/6] Read the course list expected allowed            got allowed (4 rows)       PASS
+[2/6] Read my own grades (view) expected allowed            got allowed (0 rows)       PASS
+[3/6] Read student contact details expected allowed            got allowed (5 rows)       PASS
+[4/6] Read ALL grades  expected allowed            got allowed (7 rows)       PASS
+[5/6] Change a grade   expected allowed            got allowed                PASS
+[6/6] Read financial records (IBANs) expected allowed            got allowed (5 rows)       PASS
+
+PARSEC role demo: 24/24 actions behaved as expected (identical to the ed25519 matrix).

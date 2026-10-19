@@ -25,6 +25,7 @@ from pathlib import Path
 
 import pymysql
 from dotenv import load_dotenv
+from parsec_auth import ParsecAuth
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 CERTS_DIR = PROJECT_DIR / "certs"
@@ -109,6 +110,9 @@ def connect(user, password, host=HOST, ca_file=TRUSTED_CA, database="university"
         ssl_ca=str(ca_file),        # the CA we trust
         ssl_verify_cert=True,       # the certificate must be signed by that CA
         ssl_verify_identity=True,   # and must be issued for the host we connect to
+        # PyMySQL speaks ed25519 natively; PARSEC is added by our own pure-Python
+        # handler (app/parsec_auth.py), so a parsec account connects the same way.
+        auth_plugin_map={"parsec": ParsecAuth},
         **extra,
     )
 
